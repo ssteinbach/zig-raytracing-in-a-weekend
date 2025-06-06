@@ -34,6 +34,15 @@ const GFXSTATE = struct {
     var setup: bool = false;
     var texid: u64 = 0;
     var tex: sg.Image = .{};
+    var frame_number: usize = 0;
+
+    const DIMENSIONS : [2]i32 = .{ 256, 256 };
+    const COLOR_CHANNELS : usize = 4;
+    var buffer = (
+        std.mem.zeroes(
+            [DIMENSIONS[0]][DIMENSIONS[1]][COLOR_CHANNELS]u8 
+        )
+    );
 };
 
 fn init(
@@ -41,20 +50,10 @@ fn init(
 {
     const tex = sg.makeImage(
         .{
-            .width = 4,
-            .height = 4,
-            .data = init: {
-                var data = ziis.sokol.gfx.ImageData{};
-                data.subimage[0][0] = ziis.sokol.gfx.asRange(
-                    &[4 * 4]u32{
-                        0xFFFFFFFF, 0xFF000000, 0xFFFFFFFF, 0xFF000000,
-                        0xFF000000, 0xFFFFFFFF, 0xFF000000, 0xFFFFFFFF,
-                        0xFFFFFFFF, 0xFF000000, 0xFFFFFFFF, 0xFF000000,
-                        0xFF000000, 0xFFFFFFFF, 0xFF000000, 0xFFFFFFFF,
-                    }
-                );
-                break :init data;
-            },
+            .width = GFXSTATE.DIMENSIONS[0],
+            .height = GFXSTATE.DIMENSIONS[1],
+            .usage = .STREAM,
+            .pixel_format = .RGBA8,
         }
     );
 
@@ -68,7 +67,48 @@ fn draw(
 {
     const vp = zgui.getMainViewport();
     const size = vp.getSize();
+    GFXSTATE.frame_number += 1;
 
+    sg.updateImage(
+        GFXSTATE.tex,
+        init: {
+            var data = ziis.sokol.gfx.ImageData{};
+
+            // initialize the image buffer
+            var x:usize = 0;
+            const iw_m_one: f64 = @floatFromInt(GFXSTATE.DIMENSIONS[0] - 1);
+            const ih_m_one: f64 = @floatFromInt(GFXSTATE.DIMENSIONS[1] - 1);
+            while (x < GFXSTATE.DIMENSIONS[0])
+                : (x += 1)
+            {
+                const fx: f64 = @floatFromInt(
+                    @mod(x + GFXSTATE.frame_number, GFXSTATE.DIMENSIONS[0])
+                );
+                var y:usize = 0;
+                while (y < GFXSTATE.DIMENSIONS[1])
+                    : (y += 1)
+                {
+                    const fy: f64 = @floatFromInt(
+                        @mod(y + GFXSTATE.frame_number, GFXSTATE.DIMENSIONS[1])
+                    );
+
+                    const r = fx / iw_m_one;
+                    const g = fy / ih_m_one;
+                    const b:f64 = 0.0;
+
+                    GFXSTATE.buffer[x][y][0] = @intFromFloat(255.999 * r);
+                    GFXSTATE.buffer[x][y][1] = @intFromFloat(255.999 * g);
+                    GFXSTATE.buffer[x][y][2] = @intFromFloat(255.999 * b);
+                    GFXSTATE.buffer[x][y][3] = 255;
+                }
+            }
+
+            data.subimage[0][0] = ziis.sokol.gfx.asRange(
+                &GFXSTATE.buffer
+            );
+            break :init data;
+        },
+    );
 
     if (GFXSTATE.setup == false) 
     {
@@ -163,10 +203,6 @@ fn draw(
         )
         {
             defer zgui.endChild();
-
-            zgui.text("texid: tex.id: {d} imtextureid call: {d} image state: {any}", .{ GFXSTATE.tex.id, GFXSTATE.texid, sg.queryImageInfo(GFXSTATE.tex) });
-
-            // ziis.sokol.imgui.Image(GFXSTATE.texid, .{});
 
             const wsize = zgui.getWindowSize();
 
