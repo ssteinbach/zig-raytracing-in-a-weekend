@@ -40,6 +40,22 @@ const allocator = (
     else gpa.allocator()
 );
 
+/// like calling Imgui::Image but compatible with the texture stuff I'm doing
+fn imgui_image(
+    texid: u64,
+    size: [2]f32,
+) void
+{
+    ziis.cimgui.igImage(
+        texid,
+        .{ .x = size[0], .y = size[1]},
+        .{ .x = 0, .y = 0 },
+        .{ .x = 1, .y = 1 },
+        .{ .x = 1, .y = 1, .z = 1, .w = 1 },
+        .{ .x = 0, .y = 0, .z = 0, .w = 0 },
+    );
+}
+
 /// draw the UI
 fn draw(
 ) !void 
@@ -54,7 +70,11 @@ fn draw(
         init: {
             var data = ziis.sokol.gfx.ImageData{};
 
-            raytrace.render(allocator, &STATE.buffer, STATE.frame_number);
+            raytrace.render(
+                allocator,
+                &STATE.buffer,
+                STATE.frame_number
+            );
 
             data.subimage[0][0] = ziis.sokol.gfx.asRange(
                 STATE.buffer.data
@@ -90,7 +110,10 @@ fn draw(
         defer zgui.end();
 
         var new = STATE.f;
-        if (zgui.dragFloat("texture offset", .{ .v = &new })) {
+        if (
+            zgui.dragFloat("texture offset", .{ .v = &new })
+        ) 
+        {
             const cmd = try ziis.undo.SetValue(f32).init(
                     allocator,
                     &STATE.f,
@@ -107,7 +130,10 @@ fn draw(
             zgui.bulletText("{d}: {s}", .{ ind, cmd.message });
         }
 
-        zgui.bulletText("Head Entry in STATE.Journal: {?d}", .{ STATE.journal.?.maybe_head_entry });
+        zgui.bulletText(
+            "Head Entry in STATE.Journal: {?d}",
+            .{ STATE.journal.?.maybe_head_entry }
+        );
 
         if (zgui.button("undo", .{}))
         {
@@ -142,6 +168,13 @@ fn draw(
         if (zgui.beginTabBar("Panes", .{}))
         {
             defer zgui.endTabBar();
+
+            if (zgui.beginTabItem("Texture Example", .{}))
+            {
+                defer zgui.endTabItem();
+
+                imgui_image(STATE.texid, zgui.getWindowSize());
+            }
 
             if (zgui.beginTabItem("PlotTab", .{}))
             {
@@ -203,25 +236,7 @@ fn draw(
                     }
                 }
             }
-
-            if (zgui.beginTabItem("Texture Example", .{}))
-            {
-                defer zgui.endTabItem();
-
-                const wsize = zgui.getWindowSize();
-
-                ziis.cimgui.igImage(
-                    STATE.texid,
-                    .{ .x = wsize[0], .y = wsize[1]},
-                    .{ .x = 0, .y = 0 },
-                    .{ .x = 1, .y = 1 },
-                    .{ .x = 1, .y = 1, .z = 1, .w = 1 },
-                    .{ .x = 0, .y = 0, .z = 0, .w = 0 },
-                );
-
-            }
         }
-
     }
 }
 
