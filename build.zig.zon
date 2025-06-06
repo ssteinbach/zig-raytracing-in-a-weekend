@@ -37,8 +37,8 @@
     // internet connectivity.
     .dependencies = .{
         .zgui_cimgui_implot_sokol = .{
-            .url = "git+https://github.com/ssteinbach/zgui_cimgui_implot_sokol.git#ef37b6a4ea31a5f76c9d78cb5eb86ac6dfa99d92",
-            .hash = "zgui_cimgui_implot_sokol-1.91.8-17SdXv3QBgCnWgVHP1oU6Qf1mDSFW4tvIMa96wh4HnBj",
+            .url = "git+https://github.com/ssteinbach/zgui_cimgui_implot_sokol.git#21949b54c4fc462289150d1bb43c085dee688a10",
+            .hash = "zgui_cimgui_implot_sokol-1.91.8-17SdXuvfBgAVYcrFSyBgB_1OIU3dI62AOqFvfc-hA551",
         },
     },
     .paths = .{
