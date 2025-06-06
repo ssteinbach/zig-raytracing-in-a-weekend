@@ -233,6 +233,8 @@ fn cleanup () void
         definitely_journal.deinit();
     }
 
+    STATE.buffer.deinit();
+
     if (IS_WASM == false)
     {
         const result = gpa.deinit();
