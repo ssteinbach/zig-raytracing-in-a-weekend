@@ -7,6 +7,7 @@ const ziis = @import("zgui_cimgui_implot_sokol");
 const zgui = ziis.zgui;
 const zplot = zgui.plot;
 const app_wrapper = ziis.app_wrapper;
+const sg = ziis.sokol.gfx;
 
 const build_options = @import("build_options");
 
@@ -29,6 +30,38 @@ const allocator = (
     else gpa.allocator()
 );
 
+const GFXSTATE = struct {
+    var setup: bool = false;
+    var texid: u64 = 0;
+    var tex: sg.Image = .{};
+};
+
+fn init(
+) void
+{
+    const tex = sg.makeImage(
+        .{
+            .width = 4,
+            .height = 4,
+            .data = init: {
+                var data = ziis.sokol.gfx.ImageData{};
+                data.subimage[0][0] = ziis.sokol.gfx.asRange(
+                    &[4 * 4]u32{
+                        0xFFFFFFFF, 0xFF000000, 0xFFFFFFFF, 0xFF000000,
+                        0xFF000000, 0xFFFFFFFF, 0xFF000000, 0xFFFFFFFF,
+                        0xFFFFFFFF, 0xFF000000, 0xFFFFFFFF, 0xFF000000,
+                        0xFF000000, 0xFFFFFFFF, 0xFF000000, 0xFFFFFFFF,
+                    }
+                );
+                break :init data;
+            },
+        }
+    );
+
+    GFXSTATE.tex = tex;
+    GFXSTATE.texid = ziis.sokol.imgui.imtextureid(tex);
+}
+
 /// draw the UI
 fn draw(
 ) !void 
@@ -36,6 +69,13 @@ fn draw(
     const vp = zgui.getMainViewport();
     const size = vp.getSize();
 
+
+    if (GFXSTATE.setup == false) 
+    {
+        init();
+        GFXSTATE.setup = true;
+    }
+    
     zgui.setNextWindowPos(.{ .x = 0, .y = 0 });
     zgui.setNextWindowSize(
         .{ 
@@ -114,7 +154,7 @@ fn draw(
 
         if (
             zgui.beginChild(
-                "Plot", 
+                "Image", 
                 .{
                     .w = -1,
                     .h = -1,
@@ -124,48 +164,20 @@ fn draw(
         {
             defer zgui.endChild();
 
-            if (
-                zgui.plot.beginPlot(
-                    "Test ZPlot Plot",
-                    .{ 
-                        .w = -1.0,
-                        .h = -1.0,
-                        .flags = .{ .equal = true },
-                    }
-                )
-            ) 
-            {
-                defer zgui.plot.endPlot();
+            zgui.text("texid: tex.id: {d} imtextureid call: {d} image state: {any}", .{ GFXSTATE.tex.id, GFXSTATE.texid, sg.queryImageInfo(GFXSTATE.tex) });
 
-                zgui.plot.setupAxis(
-                    .x1,
-                    .{ .label = "input" }
-                );
-                zgui.plot.setupAxis(
-                    .y1,
-                    .{ .label = "output" }
-                );
-                zgui.plot.setupLegend(
-                    .{ 
-                        .south = true,
-                        .west = true 
-                    },
-                    .{}
-                );
-                zgui.plot.setupFinish();
+            // ziis.sokol.imgui.Image(GFXSTATE.texid, .{});
 
-                const xs= [_]f32{0, 1, 2, 3, 4};
-                const ys= [_]f32{0, 1, 2, 3, 6};
+            const wsize = zgui.getWindowSize();
 
-                zplot.plotLine(
-                    "test plot",
-                    f32, 
-                    .{
-                        .xv = &xs,
-                        .yv = &ys 
-                    },
-                );
-            }
+            ziis.cimgui.igImage(
+                GFXSTATE.texid,
+                .{ .x = wsize[0], .y = wsize[1]},
+                .{ .x = 0, .y = 0 },
+                .{ .x = 1, .y = 1 },
+                .{ .x = 1, .y = 1, .z = 1, .w = 1 },
+                .{ .x = 0, .y = 0, .z = 0, .w = 0 },
+            );
         }
     }
 }
