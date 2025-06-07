@@ -40,6 +40,8 @@ pub fn render(
 /// image 1: testing the image class, making a red-green gradient over the
 ///          image plane.  I added an offset that pushes hte gradient around
 ///          to test the imgui integration.
+/// 
+/// The render functions are named after name of the figures in the book
 pub fn image_1(
     _: std.mem.Allocator,
     img: *Image_rgba_u8,
