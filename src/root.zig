@@ -58,3 +58,8 @@ pub fn render(
     }
 }
 
+test
+{
+    _ = @import("image.zig");
+    _ = @import("vector.zig");
+}

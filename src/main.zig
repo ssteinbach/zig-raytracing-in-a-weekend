@@ -43,4 +43,4 @@ test "fuzz example" {
 const std = @import("std");
 
 /// This imports the separate module containing `root.zig`. Take a look in `build.zig` for details.
-const lib = @import("zig_raytracing_in_a_weekend_lib");
+const lib = @import("raytrace");
