@@ -1,4 +1,4 @@
-//! Wrapper around the comath library for the wrinkles project.  Exposes an 
+//! Wrapper around the comath library for the Zig/RiaW project.  Exposes an 
 //! eval function to convert math expressions at compile time from strings like
 //! "a+b / c" into function calls, ie `(a.add(b.div(c))`.
 
@@ -6,49 +6,11 @@ const std = @import("std");
 
 const comath = @import("comath");
 
-/// Comath Context for the wrinkles project.  Comath allows for compile time
+/// Comath Context for the Zig/RiaW project.  Comath allows for compile time
 /// operator overloading for math expressions like "a + b / c".
 const CTX = comath.ctx.fnMethod(
     comath.ctx.simple(
         .{},
-        // XXX: in case the tests (< > <= >= etc) are desired
-        //
-        // struct {
-        //     pub const UnOp = enum { @"-", };
-        //     pub const BinOp = enum {
-        //         @"+", @"-", @"*", @"/", @"<", @"<=", @">", @">=" 
-        //     };
-        //
-        //     pub inline fn matchBinOp(comptime str: []const u8) bool {
-        //         return @hasField(BinOp, str);
-        //     }
-        //
-        //     pub const relations = .{
-        //         .@"+" = comath.relation(.left, 0),
-        //         .@"-" = comath.relation(.left, 0),
-        //         .@"*" = comath.relation(.left, 1),
-        //         .@"/" = comath.relation(.left, 1),
-        //         // .@"cos" = comath.relation(.left, 2),
-        //         .@"<" = comath.relation(.left, 3),
-        //         // .@"<=" = comath.relation(.left, 3),
-        //         // .@">" = comath.relation(.left, 3),
-        //         // .@">=" = comath.relation(.left, 3),
-        //         // .@"==" = comath.relation(.left, 3),
-        //     };
-        //
-        //     pub inline fn orderBinOp(
-        //         comptime lhs: []const u8,
-        //         comptime rhs: []const u8,
-        //     ) ?comath.Order 
-        //     {
-        //         return @field(
-        //             relations,
-        //             lhs
-        //         ).order(
-        //             @field(relations, rhs)
-        //         );
-        //     }
-        // }{}
     ),
     .{
         .@"+" = "add",
@@ -143,4 +105,21 @@ test "comath test"
     //     false,
     //     eval("lhs <= v", .{ .lhs  = lhs, .v = 3 }),
     // );
+}
+
+/// lerp from a to b by amount u, [0, 1]
+pub fn lerp(
+    u: anytype,
+    a: anytype,
+    b: @TypeOf(a),
+) @TypeOf(a) 
+{
+    return eval(
+        "(a * ((-u) + 1.0)) + (b * u)",
+        .{
+            .a = a,
+            .b = b,
+            .u = u,
+        }
+    );
 }
