@@ -5,7 +5,7 @@ const vector = @import("vector.zig");
 const comath_wrapper = @import("comath_wrapper.zig");
 
 /// A ray through the world, with origin and direction
-const Ray = struct {
+pub const Ray = struct {
     origin: vector.Point3f,
     dir: vector.V3f,
 
