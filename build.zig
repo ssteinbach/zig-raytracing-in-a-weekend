@@ -49,6 +49,8 @@ pub fn build(
 
     // commandline renderer
     {
+        // @TODO: replace this with a call to the raytracer that dumps to a
+        //        file
         const exe_mod = b.createModule(
             .{
                 .root_source_file = b.path("src/main.zig"),
