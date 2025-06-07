@@ -491,14 +491,14 @@ test "Vec Init"
     )
         |v|
     {
-        std.debug.print("hi vec: {s}\n", .{ V3f.init(v) });
+        errdefer std.debug.print("hi vec: {s}\n", .{ V3f.init(v) });
         try expectV3fEqual(v, V3f.init(v));
     }
 
     // nan check
     {
         const nan = std.math.nan(f32);
-        std.debug.print("hi vec: {s}\n", .{ V3f.init(nan) });
+        errdefer std.debug.print("hi vec: {s}\n", .{ V3f.init(nan) });
         try std.testing.expectEqual(true, V3f.init(nan).is_nan());
     }
 }
@@ -608,7 +608,6 @@ test "Base V3f: Unary Operator Tests"
             );
 
             try expectV3fEqual(expected, measured);
-            std.debug.print("unary: {s} {s}\n", .{ op, measured });
         }
     }
 }
@@ -669,11 +668,6 @@ test "Base V3f: Binary Function Tests"
             else {
                 try std.testing.expectEqual(expected, measured);
             }
-
-            std.debug.print(
-                "binary {s} {s} {s} = {any}\n",
-                .{ lhs,op,rhs, measured }
-            );
         }
     }
 }
@@ -745,11 +739,6 @@ test "Base V3f: Binary Operator Tests"
                         try expectV3fEqual(
                             expected,
                             measured
-                        );
-
-                        std.debug.print(
-                            "binary {s} {s} {s} => {any}\n",
-                            .{lhs_o, op, rhs_o, measured},
                         );
                     }
                 }
