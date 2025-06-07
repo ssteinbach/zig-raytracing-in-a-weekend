@@ -383,10 +383,37 @@ pub fn Vec3Of(
         {
             return self.div(self.length());
         }
+
+        pub fn as(
+            self: @This(),
+            comptime other_t: type,
+        ) Vec3Of(other_t)
+        {
+
+            return switch (@typeInfo(other_t)) {
+                .float, .comptime_float => .{
+                    .x = @floatCast(self.x),
+                    .y = @floatCast(self.y),
+                    .z = @floatCast(self.z),
+                },
+                .int, .comptime_int => .{
+                    .x = @intFromFloat(self.x),
+                    .y = @intFromFloat(self.y),
+                    .z = @intFromFloat(self.z),
+                },
+                else => @compileError(
+                    "Can only be converted to a float or int type not a " 
+                    ++ @typeName(T)
+                ),
+
+            };
+        }
     };
 }
 
 pub const V3f = Vec3Of(f32);
+pub const Color3f = V3f;
+pub const Point3f = V3f;
 
 /// compare two vectors.  Create an vectors from expected if it is not
 /// already one.  NaN == NaN is true.
