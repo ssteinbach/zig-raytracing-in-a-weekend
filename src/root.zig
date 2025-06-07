@@ -8,6 +8,14 @@ const image = @import("image.zig");
 const vector = @import("vector.zig");
 const comath_wrapper = @import("comath_wrapper.zig");
 
+test
+{
+    _ = @import("image.zig");
+    _ = @import("vector.zig");
+    _ = @import("comath_wrapper.zig");
+    _ = @import("ray.zig");
+}
+
 pub const Image_rgba_u8 = image.Image(4, u8);
 
 pub export fn add(a: i32, b: i32) i32 {
@@ -56,13 +64,6 @@ pub fn render(
             pixel[3] = 255;
         }
     }
-}
-
-test
-{
-    _ = @import("image.zig");
-    _ = @import("vector.zig");
-    _ = @import("comath_wrapper.zig");
 }
 
 test "comath integration"
