@@ -17,9 +17,30 @@ test
 
 pub const Image_rgba_u8 = image.Image(4, u8);
 
+const render_fn = *const fn(std.mem.Allocator, *Image_rgba_u8, usize) void;
+
+/// fun way of cataloging the history of the renders that this project can make
+const CHECKPOINTS:[]const render_fn = &[_]render_fn{
+    image_1,
+};
+
+/// default render function calls the last render function in the list
+pub fn render(
+    allocator: std.mem.Allocator,
+    img: *Image_rgba_u8,
+    frame_number: usize,
+) void
+{
+    return CHECKPOINTS[CHECKPOINTS.len - 1](allocator, img, frame_number);
+}
+
 /// main render function - this is where the "main" code from Raytracing in a
 /// Weekend goes.
-pub fn render(
+///
+/// image 1: testing the image class, making a red-green gradient over the
+///          image plane.  I added an offset that pushes hte gradient around
+///          to test the imgui integration.
+pub fn image_1(
     _: std.mem.Allocator,
     img: *Image_rgba_u8,
     frame_number: usize,
