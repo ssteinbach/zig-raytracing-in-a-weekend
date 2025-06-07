@@ -213,6 +213,23 @@ pub fn Vec3Of(
             };
         }
 
+        pub fn mod(
+            self: @This(),
+            rhs: anytype,
+        ) VecType
+        {
+            return switch (@TypeOf(rhs)) {
+                VecType => .{ 
+                    .x = @mod(self.x , rhs.x),
+                    .y = @mod(self.y , rhs.y),
+                    .z = @mod(self.z , rhs.z),
+                },
+                else => {
+                    return self.mod(VecType.init(rhs));
+                },
+            };
+        }
+
         // binary macros
 
         /// wrapper around std.math.pow for V3f

@@ -63,6 +63,7 @@ const CTX = comath.ctx.fnMethod(
         .@"cos" = "cos",
         .@"." = "dot",
         .@"^" = "cross",
+        .@"%" = "mod",
     },
 );
 
