@@ -101,10 +101,9 @@ pub fn Vec3Of(
             );
         }
 
-        
         // unary operators
 
-        /// negate the ordinate (ie *= -1)
+        /// negate the V3f (ie *= -1)
         pub inline fn neg(
             self: @This(),
         ) VecType
@@ -116,7 +115,7 @@ pub fn Vec3Of(
             };
         }
 
-        /// return the square root of the ordinate
+        /// return the square root of the V3f
         pub inline fn sqrt(
             self: @This(),
         ) VecType
@@ -128,7 +127,7 @@ pub fn Vec3Of(
             };
         }
 
-        /// return the absolute value of the ordinate
+        /// return the absolute value of the V3f
         pub inline fn abs(
             self: @This(),
         ) VecType
@@ -139,6 +138,234 @@ pub fn Vec3Of(
                 .z = @abs(self.z),
             };
         }
+
+        // binary operators
+
+        /// add to rhs, constructing an Vec as necessary
+        pub inline fn add(
+            self: @This(),
+            rhs: anytype,
+        ) VecType
+        {
+            return switch (@TypeOf(rhs)) {
+                VecType => .{ 
+                    .x = self.x + rhs.x ,
+                    .y = self.y + rhs.y ,
+                    .z = self.z + rhs.z ,
+                },
+                else => {
+                    return self.add(VecType.init(rhs));
+                },
+            };
+        }
+
+        /// subtract rhs from self
+        pub inline fn sub(
+            self: @This(),
+            rhs: anytype,
+        ) VecType
+        {
+            return switch (@TypeOf(rhs)) {
+                VecType => .{ 
+                    .x = self.x - rhs.x,
+                    .y = self.y - rhs.y,
+                    .z = self.z - rhs.z,
+                },
+                else => {
+                    return self.sub(VecType.init(rhs));
+                },
+            };
+        }
+
+        /// multiply rhs with self
+        pub inline fn mul(
+            self: @This(),
+            rhs: anytype,
+        ) VecType
+        {
+            return switch (@TypeOf(rhs)) {
+                VecType => .{ 
+                    .x = self.x * rhs.x,
+                    .y = self.y * rhs.y,
+                    .z = self.z * rhs.z,
+                },
+                else => {
+                    return self.mul(VecType.init(rhs));
+                },
+            };
+        }
+
+        /// divide self by rhs
+        pub inline fn div(
+            self: @This(),
+            rhs: anytype,
+        ) VecType
+        {
+            return switch (@TypeOf(rhs)) {
+                VecType => .{ 
+                    .x = self.x / rhs.x,
+                    .y = self.y / rhs.y,
+                    .z = self.z / rhs.z,
+                },
+                else => {
+                    return self.sub(VecType.init(rhs));
+                },
+            };
+        }
+
+        // binary macros
+
+        /// wrapper around std.math.pow for V3f
+        pub inline fn pow(
+            self: @This(),
+            exp: BaseType,
+        ) VecType
+        {
+            return .{ 
+                .x = std.math.pow(BaseType, self.x, exp),
+                .y = std.math.pow(BaseType, self.y, exp),
+                .z = std.math.pow(BaseType, self.z, exp),
+            };
+        }
+
+        pub inline fn min(
+            self: @This(),
+            rhs: anytype,
+        ) VecType
+        {
+            return switch (@TypeOf(rhs)) {
+                VecType => .{ 
+                    .x = @min(self.x,rhs.x),
+                    .y = @min(self.y,rhs.y),
+                    .z = @min(self.z,rhs.z),
+                },
+                else => {
+                    return self.min(VecType.init(rhs));
+                },
+            };
+        }
+
+        pub inline fn max(
+            self: @This(),
+            rhs: anytype,
+        ) VecType
+        {
+            return switch (@TypeOf(rhs)) {
+                VecType => .{ 
+                    .x = @max(self.x,rhs.x),
+                    .y = @max(self.y,rhs.y),
+                    .z = @max(self.z,rhs.z),
+                },
+                else => {
+                    return self.max(VecType.init(rhs));
+                },
+            };
+        }
+
+        // binary tests
+
+        /// strict equality
+        pub inline fn eql(
+            self: @This(),
+            rhs: anytype,
+        ) bool
+        {
+            return switch (@TypeOf(rhs)) {
+                VecType => (
+                    self.x == rhs.x
+                    and self.y == rhs.y
+                    and self.z == rhs.z
+                ),
+                else => {
+                    return self.eql(VecType.init(rhs));
+                },
+            };
+        }
+
+        /// approximate equality with the EPSILON as the width
+        pub inline fn eql_approx(
+            self: @This(),
+            rhs: anytype,
+        ) bool
+        {
+            return switch (@TypeOf(rhs)) {
+                VecType => (
+                    self.x < (rhs.x + EPSILON_F)
+                    and self.y < (rhs.y + EPSILON_F)
+                    and self.z < (rhs.z + EPSILON_F)
+                    and self.x > (rhs.x - EPSILON_F)
+                    and self.y > (rhs.y - EPSILON_F)
+                    and self.z > (rhs.z - EPSILON_F)
+                ),
+                else => {
+                    return self.eql_approx(VecType.init(rhs));
+                },
+            };
+        }
+
+        /// if the V3f is infinite
+        pub inline fn is_inf(
+            self: @This(),
+        ) bool
+        {
+            return std.math.isInf(self.v);
+        }
+
+        /// if the V3f is finite
+        pub inline fn is_finite(
+            self: @This(),
+        ) bool
+        {
+            return std.math.isFinite(self.v);
+        }
+
+        // vector specific functions
+ 
+        /// dot product
+        pub fn dot(
+            self: @This(),
+            rhs: VecType,
+        ) BaseType
+        {
+            return (self.x * rhs.x + self.y * rhs.y + self.z * rhs.z);
+        }
+
+        /// cross product
+        pub fn cross(
+            self: @This(),
+            rhs: VecType,
+        ) VecType
+        {
+            return .{
+                .x = self.y * rhs.z - self.z * rhs.y,
+                .y = self.z * rhs.x - self.x * rhs.z,
+                .z = self.x * rhs.y - self.y * rhs.x,
+            };
+        }
+
+        /// length of the vector
+        pub fn length(
+            self: @This(),
+        ) BaseType
+        {
+            return std.math.sqrt(self.length_squared());
+        }
+
+        /// square of the length 
+        pub fn length_squared(
+            self: @This(),
+        ) BaseType
+        {
+            return self.dot(self);
+        }
+
+        /// normalized form / direction vector of unit length
+        pub fn unit_vector(
+            self: @This(),
+        ) VecType
+        {
+            return self.div(self.length());
+        }
     };
 }
 
@@ -146,7 +373,7 @@ pub const V3f = Vec3Of(f32);
 
 /// compare two vectors.  Create an vectors from expected if it is not
 /// already one.  NaN == NaN is true.
-pub fn expectOrdinateEqual(
+pub fn expectV3fEqual(
     expected_in: anytype,
     measured_in: anyerror!V3f,
 ) !void
@@ -158,8 +385,8 @@ pub fn expectOrdinateEqual(
                 V3f.init(expected_in)
             ),
             else => @compileError(
-                "Error: can only compare an Ordinate to a float, int, or "
-                ++ "other Ordinate.  Got a: " ++ @typeName(@TypeOf(expected_in))
+                "Error: can only compare an V3f to a float, int, or "
+                ++ "other V3f.  Got a: " ++ @typeName(@TypeOf(expected_in))
             ),
         },
     };
@@ -186,7 +413,7 @@ pub fn expectOrdinateEqual(
             .float, .comptime_float => try std.testing.expectApproxEqAbs(
                 @field(expected, f.name),
                 @field(measured, f.name),
-                // util.EPSILON_F,
+                // EPSILON_F,
                 1e-3,
             ),
             inline else => @compileError(
@@ -209,7 +436,7 @@ test "Vec Init"
         |v|
     {
         std.debug.print("hi vec: {s}\n", .{ V3f.init(v) });
-        try expectOrdinateEqual(v, V3f.init(v));
+        try expectV3fEqual(v, V3f.init(v));
     }
 
     // nan check
@@ -220,12 +447,70 @@ test "Vec Init"
     }
 }
 
+pub inline fn min(
+    lhs: anytype,
+    rhs: @TypeOf(lhs),
+) @TypeOf(lhs)
+{
+    return switch (@typeInfo(@TypeOf(lhs))) {
+        .@"struct" => lhs.min(rhs),
+        else => std.math.min(lhs, rhs),
+    };
+}
+
+pub inline fn max(
+    lhs: anytype,
+    rhs: @TypeOf(lhs),
+) @TypeOf(lhs)
+{
+    return switch (@typeInfo(@TypeOf(lhs))) {
+        .@"struct" => lhs.max(rhs),
+        else => std.math.max(lhs, rhs),
+    };
+}
+
+pub inline fn eql(
+    lhs: anytype,
+    rhs: @TypeOf(lhs),
+) bool
+{
+    return switch (@typeInfo(@TypeOf(lhs))) {
+        .@"struct" => lhs.eql(rhs),
+        else => lhs == rhs,
+    };
+}
+
+pub inline fn eql_approx(
+    lhs: anytype,
+    rhs: @TypeOf(lhs),
+) bool
+{
+    return switch (@typeInfo(@TypeOf(lhs))) {
+        .@"struct" => lhs.eql_approx(rhs),
+        else => std.math.approxEqAbs(@TypeOf(lhs), lhs, rhs, EPSILON_F),
+    };
+}
+
 const basic_math = struct {
     // unary
     pub inline fn neg(in: anytype) @TypeOf(in) { return 0-in; }
     pub inline fn sqrt(in: anytype) @TypeOf(in) { return std.math.sqrt(in); }
     pub inline fn abs(in: anytype) @TypeOf(in) { return @abs(in); }
     pub inline fn normalized(in: anytype) @TypeOf(in) { return in; }
+
+    // binary
+    pub inline fn add(lhs: anytype, rhs: anytype) @TypeOf(lhs) { return lhs + rhs; }
+    pub inline fn sub(lhs: anytype, rhs: anytype) @TypeOf(lhs) { return lhs - rhs; }
+    pub inline fn mul(lhs: anytype, rhs: anytype) @TypeOf(lhs) { return lhs * rhs; }
+    pub inline fn div(lhs: anytype, rhs: anytype) @TypeOf(lhs) { return lhs / rhs; }
+
+    // binary macros
+    pub inline fn min(lhs: anytype, rhs: anytype) @TypeOf(lhs) { return @min(lhs, rhs); }
+    pub inline fn max(lhs: anytype, rhs: anytype) @TypeOf(lhs) { return @max(lhs, rhs); }
+
+    // binline fnary tests
+    pub inline fn eql(lhs: anytype, rhs: anytype) bool { return lhs == rhs; }
+    pub inline fn eql_approx(lhs: anytype, rhs: anytype) bool { return std.math.approxEqAbs(V3f.BaseType, lhs, rhs, EPSILON_F); }
 };
 
 test "Base V3f: Unary Operator Tests"
@@ -266,8 +551,205 @@ test "Base V3f: Unary Operator Tests"
                 .{ t, t.in, expected_in, expected, in, measured },
             );
 
-            try expectOrdinateEqual(expected, measured);
+            try expectV3fEqual(expected, measured);
             std.debug.print("unary: {s} {s}\n", .{ op, measured });
         }
+    }
+}
+
+test "Base V3f: Binary Function Tests"
+{
+    const TestCase = struct {
+        lhs: V3f.BaseType,
+        rhs: V3f.BaseType,
+    };
+    const tests = &[_]TestCase{
+        .{ .lhs =  1, .rhs =  1 },
+        .{ .lhs = -1, .rhs =  1 },
+        .{ .lhs =  1, .rhs = -1 },
+        .{ .lhs = -1, .rhs = -1 },
+        .{ .lhs = -1.2, .rhs = -1001.45 },
+        .{ .lhs =  0, .rhs =  5.345 },
+    };
+
+    inline for (&.{ "min", "max", "eql", "eql_approx" })
+        |op|
+    {
+        for (tests)
+            |t|
+        {
+            const lhs = V3f.init(t.lhs);
+            const rhs = V3f.init(t.rhs);
+
+            const expected_raw = (
+                @field(basic_math, op)(t.lhs, t.rhs) 
+            );
+
+            const measured = @field(@This(), op)(lhs, rhs);
+
+            const is_ord = @TypeOf(measured) == V3f;
+
+            const expected = if (is_ord) V3f.init(
+                expected_raw
+            ) else expected_raw;
+
+            if (is_ord) {
+                errdefer std.debug.print(
+                    "Error with test: " ++ @typeName(V3f) ++ "." ++ op ++ 
+                    ": iteration: {any}\nexpected: {d}\nmeasured: {s}\n",
+                    .{ t, expected, measured },
+                );
+            } else {
+                errdefer std.debug.print(
+                    "Error with test: " ++ @typeName(V3f) ++ "." ++ op ++ 
+                    ": iteration: {any}\nexpected: {any}\nmeasured: {any}\n",
+                    .{ t, expected, measured },
+                );
+            }
+
+            if (is_ord) {
+                try expectV3fEqual(expected, measured);
+            }
+            else {
+                try std.testing.expectEqual(expected, measured);
+            }
+
+            std.debug.print(
+                "binary {s} {s} {s} = {any}\n",
+                .{ lhs,op,rhs, measured }
+            );
+        }
+    }
+}
+
+test "Base V3f: Binary Operator Tests"
+{
+    const values = [_]V3f.BaseType{
+        0,
+        1,
+        1.2,
+        5.345,
+        3.14159,
+        std.math.pi,
+        // 0.45 not exactly representable in binary floating point numbers
+        1001.45,
+        std.math.inf(V3f.BaseType),
+        std.math.nan(V3f.BaseType),
+    };
+
+    const signs = [_]V3f.BaseType{ -1, 1 };
+
+    inline for (&.{ "add", "sub", "mul", "div", })
+        |op|
+    {
+        for (values)
+            |lhs_v|
+        {
+            for (signs)
+                |s_lhs|
+            {
+                for (values)
+                    |rhs_v|
+                {
+                    for (signs) 
+                        |s_rhs|
+                    {
+                        const lhs_sv = s_lhs * lhs_v;
+                        const rhs_sv = s_rhs * rhs_v;
+
+                        const expected = V3f.init(
+                           @field(basic_math, op)(
+                               lhs_sv,
+                               rhs_sv
+                            ) 
+                        );
+
+                        const lhs_o = V3f.init(lhs_sv);
+                        const rhs_o = V3f.init(rhs_sv);
+
+                        const measured = (
+                            @field(V3f, op)(lhs_o, rhs_o)
+                        );
+
+                        errdefer std.debug.print(
+                            "Error with test: " ++ @typeName(V3f) 
+                            ++ "." ++ op ++ ": \nlhs: {d} * {d} rhs: {d} * {d}\n"
+                            ++ "lhs_sv: {d} rhs_sv: {d}\n"
+                            ++ "{s} " ++ op ++ " {s}\n"
+                            ++ "expected: {d}\nmeasured: {s}\n",
+                            .{
+                                s_lhs, lhs_v,
+                                s_rhs, rhs_v,
+                                lhs_sv, rhs_sv,
+                                lhs_o, rhs_o,
+                                expected, measured,
+                            },
+                        );
+
+                        try expectV3fEqual(
+                            expected,
+                            measured
+                        );
+
+                        std.debug.print(
+                            "binary {s} {s} {s} => {any}\n",
+                            .{lhs_o, op, rhs_o, measured},
+                        );
+                    }
+                }
+            }
+        }
+    }
+}
+
+test "cross product"
+{
+    const v1 = V3f{ .x = 1, .y = 0, .z = 1, };
+    const v2 = V3f{ .x = 0, .y = 1, .z = 1, };
+
+    const measured = v1.cross(v2);
+
+    try expectV3fEqual(
+        V3f{.x = -1, .y = -1, .z = 1},
+        measured
+    );
+}
+
+test "dot product"
+{
+    const v1 = V3f{ .x = 1, .y = 0, .z = 1, };
+    const v2 = V3f{ .x = 0, .y = 1, .z = 1, };
+
+    const measured = v1.dot(v2);
+
+    try std.testing.expectEqual(
+        1,
+        measured
+    );
+}
+
+test "length"
+{
+    for (
+        [_]struct{
+            v: V3f, result: V3f.BaseType
+        }{
+            .{ .v = V3f{ .x = 3, .y = 4, .z = 0 }, .result = 5 },
+            .{ .v = V3f{ .x = 0, .y = 4, .z = 3 }, .result = 5 },
+            .{ .v = V3f{ .x = 2, .y = 2, .z = 1 }, .result = 3 },
+            .{ .v = V3f{ .x = 2, .y = 1, .z = 2 }, .result = 3 },
+            .{ .v = V3f{ .x = 1, .y = 2, .z = 2 }, .result = 3 },
+            .{ .v = V3f{ .x = -1, .y = -2, .z = 2 }, .result = 3 },
+        }
+    ) |t|
+    {
+        const measured = t.v.length();
+        try std.testing.expectEqual(t.result, measured);
+
+        const measured_sq = t.v.length_squared();
+        try std.testing.expectEqual(
+            t.result * t.result,
+            measured_sq
+        );
     }
 }
