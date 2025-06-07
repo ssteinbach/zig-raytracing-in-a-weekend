@@ -220,7 +220,7 @@ pub fn Vec3Of(
                     .z = self.z / rhs.z,
                 },
                 else => {
-                    return self.sub(VecType.init(rhs));
+                    return self.div(VecType.init(rhs));
                 },
             };
         }
