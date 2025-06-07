@@ -40,6 +40,10 @@
             .url = "git+https://github.com/ssteinbach/zgui_cimgui_implot_sokol.git#21949b54c4fc462289150d1bb43c085dee688a10",
             .hash = "zgui_cimgui_implot_sokol-1.91.8-17SdXuvfBgAVYcrFSyBgB_1OIU3dI62AOqFvfc-hA551",
         },
+        .comath = .{
+            .url = "git+https://github.com/ssteinbach/comath.git#8160db9e8a4c17b5df1fb935c7773eedde377d0e",
+            .hash = "comath-0.0.1-wKZ2nzGvAQA_wvKSAXN3DRY5dK3CmZ2MiSMKsKJKPdg1",
+        },
     },
     .paths = .{
         "build.zig",
