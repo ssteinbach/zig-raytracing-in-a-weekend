@@ -88,6 +88,57 @@ pub fn Vec3Of(
                 .{ self.x, self.y, self.z }
             );
         }
+
+        /// convienent type error for the comptime ducktyping this struct uses
+        inline fn type_error(
+            thing: anytype,
+        ) void
+        {
+            @compileError(
+                @typeName(@This()) ++ " can only do math over floats,"
+                ++ " ints and other " ++ @typeName(@This()) ++ ", not: " 
+                ++ @typeName(@TypeOf(thing))
+            );
+        }
+
+        
+        // unary operators
+
+        /// negate the ordinate (ie *= -1)
+        pub inline fn neg(
+            self: @This(),
+        ) VecType
+        {
+            return .{
+                .x = - self.x,
+                .y = - self.y,
+                .z = - self.z,
+            };
+        }
+
+        /// return the square root of the ordinate
+        pub inline fn sqrt(
+            self: @This(),
+        ) VecType
+        {
+            return .{
+                .x = std.math.sqrt(self.x),
+                .y = std.math.sqrt(self.y),
+                .z = std.math.sqrt(self.z),
+            };
+        }
+
+        /// return the absolute value of the ordinate
+        pub inline fn abs(
+            self: @This(),
+        ) VecType
+        {
+            return .{
+                .x = @abs(self.x),
+                .y = @abs(self.y),
+                .z = @abs(self.z),
+            };
+        }
     };
 }
 
@@ -166,5 +217,57 @@ test "Vec Init"
         const nan = std.math.nan(f32);
         std.debug.print("hi vec: {s}\n", .{ V3f.init(nan) });
         try std.testing.expectEqual(true, V3f.init(nan).is_nan());
+    }
+}
+
+const basic_math = struct {
+    // unary
+    pub inline fn neg(in: anytype) @TypeOf(in) { return 0-in; }
+    pub inline fn sqrt(in: anytype) @TypeOf(in) { return std.math.sqrt(in); }
+    pub inline fn abs(in: anytype) @TypeOf(in) { return @abs(in); }
+    pub inline fn normalized(in: anytype) @TypeOf(in) { return in; }
+};
+
+test "Base V3f: Unary Operator Tests"
+{
+    const TestCase = struct {
+        in: V3f.BaseType,
+    };
+    const tests = &[_]TestCase{
+        .{ .in =  1 },
+        .{ .in =  -1 },
+        .{ .in = 25 },
+        .{ .in = 64.34 },
+        .{ .in =  5.345 },
+        .{ .in =  -5.345 },
+        .{ .in =  0 },
+        .{ .in =  -0.0 },
+        .{ .in =  std.math.inf(V3f.BaseType) },
+        .{ .in =  -std.math.inf(V3f.BaseType) },
+        .{ .in =  std.math.nan(V3f.BaseType) },
+    };
+
+    inline for (&.{ "neg", "sqrt", "abs",})
+        |op|
+    {
+        for (tests)
+            |t|
+        {
+            const expected_in = (@field(basic_math, op)(t.in));
+            const expected = V3f.init(expected_in);
+
+            const in = V3f.init(t.in);
+            const measured = @field(V3f, op)(in);
+
+            errdefer std.debug.print(
+                "Error with test: \n" ++ @typeName(V3f) ++ "." ++ op 
+                ++ ":\n iteration: {any}\nin: {d}\nexpected_in: {d}\n"
+                ++ "expected: {d}\nmeasured_in: {s}\nmeasured: {s}\n",
+                .{ t, t.in, expected_in, expected, in, measured },
+            );
+
+            try expectOrdinateEqual(expected, measured);
+            std.debug.print("unary: {s} {s}\n", .{ op, measured });
+        }
     }
 }
