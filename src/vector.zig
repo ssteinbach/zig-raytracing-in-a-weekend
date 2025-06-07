@@ -160,4 +160,11 @@ test "Vec Init"
         std.debug.print("hi vec: {s}\n", .{ V3f.init(v) });
         try expectOrdinateEqual(v, V3f.init(v));
     }
+
+    // nan check
+    {
+        const nan = std.math.nan(f32);
+        std.debug.print("hi vec: {s}\n", .{ V3f.init(nan) });
+        try std.testing.expectEqual(true, V3f.init(nan).is_nan());
+    }
 }
