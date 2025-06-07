@@ -26,35 +26,33 @@ pub fn render(
 {
     const cols = img.width;
     const rows = img.height;
-    // const channels = pixel_buffer[0][0].len;
 
-    const iw_m_one: f64 = @floatFromInt(cols - 1);
-    const ih_m_one: f64 = @floatFromInt(rows - 1);
+    const dim = vector.Color3f.init([_]usize{ cols, rows, 0});
 
     var x:usize = 0;
     while (x < cols)
         : (x += 1)
     {
-        const fx: f64 = @floatFromInt(
-            @mod(x + frame_number, cols)
-        );
         var y:usize = 0;
         while (y < rows)
             : (y += 1)
         {
-            const fy: f64 = @floatFromInt(
-                @mod(y + frame_number, rows)
+            var pixel_color_f = comath_wrapper.eval(
+                "(((p + f) % dim) / (dim - 1)) * 255.999",
+                .{ 
+                    .p = vector.Color3f.init([_]usize{x,y,0}),
+                    .f = frame_number,
+                    .dim = dim,
+                }
             );
-
-            const r = fx / iw_m_one;
-            const g = fy / ih_m_one;
-            const b:f64 = 0.0;
+            pixel_color_f.z = 0;
+            const pixel_color = pixel_color_f.as(u8);
 
             var pixel = img.pixel(x, y);
 
-            pixel[0] = @intFromFloat(255.999 * r);
-            pixel[1] = @intFromFloat(255.999 * g);
-            pixel[2] = @intFromFloat(255.999 * b);
+            pixel[0] = pixel_color.x;
+            pixel[1] = pixel_color.y;
+            pixel[2] = 0;
             pixel[3] = 255;
         }
     }

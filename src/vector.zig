@@ -40,18 +40,30 @@ pub fn Vec3Of(
                     .z = @floatFromInt(value),
                 },
                 .@"struct" => .{
-                    .x = value.x,
-                    .y = value.y,
-                    .z = value.z,
+                    .x = @floatCast(value.x),
+                    .y = @floatCast(value.y),
+                    .z = @floatCast(value.z),
                 },
-                .array => .{
-                    .x = value[0],
-                    .y = value[1],
-                    .z = value[2],
+                .array => |arr| switch (@typeInfo(arr.child)) {
+                    .int, .comptime_int => .{
+                        .x = @floatFromInt(value[0]),
+                        .y = @floatFromInt(value[1]),
+                        .z = @floatFromInt(value[2]),
+                    },
+                    .float, .comptime_float => .{
+                        .x = @floatCast(value[0]),
+                        .y = @floatCast(value[1]),
+                        .z = @floatCast(value[2]),
+                    },
+                    else => @compileError(
+                        "Can only be constructed from a float, int, struct, "
+                        ++ "or array, not a " 
+                        ++ @typeName(@TypeOf(value))
+                    ),
                 },
                 else => @compileError(
                     "Can only be constructed from a float, int, struct, "
-                    ++ "or array, not a " 
+                    ++ "or array of float/int, not a " 
                     ++ @typeName(@TypeOf(value))
                 ),
             };
@@ -142,7 +154,7 @@ pub fn Vec3Of(
         // binary operators
 
         /// add to rhs, constructing an Vec as necessary
-        pub inline fn add(
+        pub fn add(
             self: @This(),
             rhs: anytype,
         ) VecType
@@ -160,7 +172,7 @@ pub fn Vec3Of(
         }
 
         /// subtract rhs from self
-        pub inline fn sub(
+        pub fn sub(
             self: @This(),
             rhs: anytype,
         ) VecType
@@ -178,7 +190,7 @@ pub fn Vec3Of(
         }
 
         /// multiply rhs with self
-        pub inline fn mul(
+        pub fn mul(
             self: @This(),
             rhs: anytype,
         ) VecType
@@ -196,7 +208,7 @@ pub fn Vec3Of(
         }
 
         /// divide self by rhs
-        pub inline fn div(
+        pub fn div(
             self: @This(),
             rhs: anytype,
         ) VecType
