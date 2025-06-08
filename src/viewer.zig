@@ -196,11 +196,26 @@ fn draw(
         {
             defer zgui.endTabBar();
 
-            if (zgui.beginTabItem("Texture Example", .{}))
+            if (zgui.beginTabItem("Raytracing in a Week Viewer", .{}))
             {
                 defer zgui.endTabItem();
 
-                imgui_image(STATE.texid, zgui.getWindowSize());
+                const content_space = zgui.getContentRegionAvail();
+
+                const im_width: f32 = @floatFromInt(STATE.buffer.width);
+                const width_rat = content_space[0]/im_width;
+
+                const im_height: f32 = @floatFromInt(STATE.buffer.height);
+                const height_rat = content_space[1]/im_height;
+
+                const rat = @min(width_rat, height_rat);
+
+                const c_win = [_]f32{
+                    rat*im_width,
+                    rat*im_height,
+                };
+
+                imgui_image(STATE.texid, c_win);
             }
 
             if (zgui.beginTabItem("PlotTab", .{}))
