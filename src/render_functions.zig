@@ -140,32 +140,34 @@ const image_2 = struct {
         _: usize,
     ) void
     {
-        const aspect_ratio:vector.V3f.BaseType = 16.0 / 9.0;
-        const image_width:usize = 400;
+        const aspect_ratio:vector.V3f.BaseType = @floatFromInt(img.width / img.height);
+        const image_width:usize = img.width;
 
         const image_height:usize = @intFromFloat(
             @max(1.0, @as(BaseType, @floatFromInt(image_width)) / aspect_ratio)
         );
 
+        const viewport_height : BaseType = 2.0;
+        const viewport_width : BaseType = (
+            ( viewport_height * @as(BaseType, @floatFromInt(image_width))) 
+            / @as(BaseType, @floatFromInt(image_height))
+        );
+
         const camera = struct {
             const focal_length : BaseType = 1.0;
-            const viewport_height : BaseType = 2.0;
-            const viewport_width : BaseType = (
-                (viewport_height * image_width) / image_height
-            );
 
             // camera at the origin
             const center = vector.Point3f.init(0);
         };
 
         const viewport_u: vector.V3f = .{ 
-            .x = camera.viewport_width,
+            .x = viewport_width,
             .y = 0,
             .z = 0,
         };
         const viewport_v: vector.V3f = .{ 
             .x = 0,
-            .y = -camera.viewport_height,
+            .y = -viewport_height,
             .z = 0,
         };
 
@@ -277,32 +279,35 @@ const image_3 = struct {
         _: usize,
     ) void
     {
-        const aspect_ratio:vector.V3f.BaseType = 16.0 / 9.0;
-        const image_width:usize = 400;
+        const aspect_ratio:vector.V3f.BaseType = @floatFromInt(img.width / img.height);
+        const image_width:usize = img.width;
 
         const image_height:usize = @intFromFloat(
             @max(1.0, @as(BaseType, @floatFromInt(image_width)) / aspect_ratio)
         );
 
+        const viewport_height : BaseType = 2.0;
+        const viewport_width : BaseType = (
+            (
+             viewport_height 
+             * @as(BaseType, @floatFromInt(image_width))) / @as(BaseType, @floatFromInt(image_height))
+            );
+
         const camera = struct {
             const focal_length : BaseType = 1.0;
-            const viewport_height : BaseType = 2.0;
-            const viewport_width : BaseType = (
-                (viewport_height * image_width) / image_height
-            );
 
             // camera at the origin
             const center = vector.Point3f.init(0);
         };
 
         const viewport_u: vector.V3f = .{ 
-            .x = camera.viewport_width,
+            .x = viewport_width,
             .y = 0,
             .z = 0,
         };
         const viewport_v: vector.V3f = .{ 
             .x = 0,
-            .y = -camera.viewport_height,
+            .y = -viewport_height,
             .z = 0,
         };
 
