@@ -7,6 +7,7 @@ comath[^2] and zgui/sokol/imgui[^3] for a UI.
 [^2] [https://github.com/InKryption/comath](https://github.com/InKryption/comath)
 [^3] [https://github.com/ssteinbach/zgui_cimgui_implot_sokol](https://github.com/ssteinbach/zgui_cimgui_implot_sokol)
 
+![Screenshot of visualizer app](screenshot.png)
 
 ## tests
 
