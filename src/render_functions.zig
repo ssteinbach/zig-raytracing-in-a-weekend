@@ -100,12 +100,8 @@ pub fn image_1(
             : (y += 1)
         {
             var pixel_color_f = comath_wrapper.eval(
-                "(((p + f) % dim) / (dim - 1)) * 255.999",
-                .{ 
-                    .p = vector.Color3f.init([_]usize{x,y,0}),
-                    .f = frame_number,
-                    .dim = dim,
-                }
+                "(((v2(x,y) + f) % dim) / (dim - 1)) * 255.999",
+                .{ .x = x, .y = y, .f = frame_number, .dim = dim, },
             );
             pixel_color_f.z = 0;
             const pixel_color = pixel_color_f.as(u8);
@@ -376,10 +372,10 @@ pub fn hit_sphere(
 ) ?BaseType
 {
     const oc = s.center_worldspace.sub(r.origin);
-    const a = r.dir.dot(r.dir);
-    const b = r.dir.dot(oc) * -2.0;
-    const c = oc.dot(oc) - s.radius*s.radius;
-    const discriminant = b*b - 4*a*c;
+    const a = r.dir.length_squared();
+    const b = r.dir.dot(oc);
+    const c = oc.length_squared() - s.radius*s.radius;
+    const discriminant = b*b - a*c;
 
     if (discriminant < 0)
     {
@@ -387,7 +383,7 @@ pub fn hit_sphere(
     }
     else 
     {
-        return (-b - std.math.sqrt(discriminant) ) / (2.0*a);
+        return (b - std.math.sqrt(discriminant) ) / (a);
     }
 }
 
