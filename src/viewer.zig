@@ -341,6 +341,7 @@ pub fn main(
 
     app_wrapper.sokol_main(
         .{
+            .title = "Raytracing in a Weekend (Zig + Comath + Imgui)",
             .draw = draw, 
             .maybe_pre_zgui_shutdown_cleanup = cleanup,
             .maybe_post_zgui_init = init,
