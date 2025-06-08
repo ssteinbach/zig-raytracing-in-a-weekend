@@ -1,5 +1,4 @@
 //! Raytracing library
-
 const std = @import("std");
 const testing = std.testing;
 
@@ -35,8 +34,8 @@ pub fn render(
 
 test "comath integration"
 {
-    const v1 = vector.V3f{ .x = 1, .y = 2, .z = 3 };
-    const v2 = vector.V3f{ .x = 0.5, .y = 1, .z = 1 };
+    const tv1 = vector.V3f{ .x = 1, .y = 2, .z = 3 };
+    const tv2 = vector.V3f{ .x = 0.5, .y = 1, .z = 1 };
 
     const tests = [_]struct{
         expr: []const u8,
@@ -44,17 +43,17 @@ test "comath integration"
     }{
         // addition
         .{
-            .expr = "v1 + v2",
+            .expr = "tv1 + tv2",
             .result = .{ .x = 1.5, .y = 3, .z = 4 } 
         },
         // subtraction
         .{
-            .expr = "v1 - v2",
+            .expr = "tv1 - tv2",
             .result = .{ .x = 0.5, .y = 1, .z = 2 } 
         },
         // cross
         .{
-            .expr = "v1 ^ v2",
+            .expr = "tv1 ^ tv2",
             .result = .{ .x = -1, .y = 0.5, .z = 0 } 
         },
     };
@@ -64,56 +63,22 @@ test "comath integration"
     {
         const measured = comath_wrapper.eval(
             t.expr,
-            .{ .v1 = v1, .v2 = v2 }
+            .{ .tv1 = tv1, .tv2 = tv2 }
         );
 
         try vector.expectV3fEqual(t.result, measured);
     }
 }
 
- // test "further comath testing"
- // {
- //     // // method call first
- //     // const a = vector.V3f.init(1);
- //     // comath_wrapper.eval(
- //     //     "a.length()",
- //     //     .{ .a = a },
- //     // );
- //
- //     // function call
- //     // comath_wrapper.eval(
- //     //     "vec3(0,0,1)",
- //     //     .{},
- //     // );
- // }
+test "function call"
+{
+    const result = comath_wrapper.eval(
+        "v3(0.5, 0.25, 1.25) + v3(-1, -2, 3) ^ v2(3, 2)",
+        .{},
+    );
 
-// const comath = @import("comath");
-//
-// fn lerp(
-//     u:f32,
-//     first:f32,
-//     second:f32
-// ) f32
-// {
-//     return u * first + (1.0 - u) * second;
-// }
-//
-// test "function call"
-// {
-//     const CTX = comath.ctx.fnMethod(
-//         comath.ctx.simple(
-//             // ?
-//             .{},
-//         ),
-//         // ?
-//         .{},
-//     );
-//
-//     const result = comath.eval(
-//         "lerp(0.5, 0.25, 1.25)",
-//         CTX,
-//         .{}
-//     );
-//
-//     try std.testing.expectEqual(0.75, result);
-// }
+    try std.testing.expectEqual(
+        vector.V3f{ .x = -5.5, .y = 9.25, .z = 5.25 },
+        result
+    );
+}

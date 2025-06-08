@@ -69,6 +69,26 @@ pub fn Vec3Of(
             };
         }
 
+        /// used in the comath context to make vector where the z component is
+        /// 0
+        pub inline fn init_2(
+            x: anytype,
+            y: @TypeOf(x),
+        ) VecType
+        {
+            return @This().init([_]@TypeOf(x){ x, y, 0 }); 
+        }
+
+        /// used in the comath context to make a vector from three arguments
+        pub inline fn init_3(
+            x: BaseType,
+            y: BaseType,
+            z: BaseType,
+        ) VecType
+        {
+            return @This().init([_]@TypeOf(x){ x, y, z }); 
+        }
+
         /// if the vector is a NaN
         pub inline fn is_nan(
             self: @This(),
