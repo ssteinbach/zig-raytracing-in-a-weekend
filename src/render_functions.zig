@@ -6,6 +6,8 @@ const ray = @import("ray.zig");
 const vector = @import("vector.zig");
 const comath_wrapper = @import("comath_wrapper.zig");
 
+const BaseType = vector.V3f.BaseType;
+
 /// pointer to a render function
 pub const render_fn = *const fn(
     std.mem.Allocator,
@@ -130,9 +132,6 @@ const image_2 = struct {
             vector.Color3f.init([_]f32{0.5, 0.7, 1.0}),
         );
     }
-
-    const BaseType = vector.V3f.BaseType;
-
 
     pub fn render(
         _: std.mem.Allocator,
@@ -269,8 +268,6 @@ const image_3 = struct {
             vector.Color3f.init([_]f32{0.5, 0.7, 1.0}),
         );
     }
-
-    const BaseType = vector.V3f.BaseType;
 
 
     pub fn render(
