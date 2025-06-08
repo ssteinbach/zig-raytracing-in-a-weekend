@@ -5,28 +5,39 @@
 const std = @import("std");
 
 const comath = @import("comath");
+const vector = @import("vector.zig");
+const ray = @import("ray.zig");
 
 /// Comath Context for the Zig/RiaW project.  Comath allows for compile time
 /// operator overloading for math expressions like "a + b / c".
-const CTX = comath.ctx.fnMethod(
-    comath.ctx.simple(
-        .{},
-    ),
-    .{
-        .@"+" = "add",
-        .@"-" = &.{"sub", "negate", "neg"},
-        .@"*" = "mul",
-        .@"/" = "div",
-        .@"<" = "lt",
-        .@"<=" = "lteq",
-        .@">" = "gt",
-        .@">=" = "gteq",
-        .@"==" = "eq",
-        .@"cos" = "cos",
-        .@"." = "dot",
-        .@"^" = "cross",
-        .@"%" = "mod",
-    },
+const CTX = (
+    comath.ctx.fnMethod(
+        comath.ctx.simple(
+            comath.ctx.namespace(
+                .{
+                    .v3 = vector.V3f.init_3,
+                    .v2 = vector.V3f.init_2,
+                    .unit_vector = vector.V3f.unit_vector,
+                    .at = ray.Ray.at,
+                },
+            )
+        ),
+        .{
+            .@"+" = "add",
+            .@"-" = &.{"sub", "negate", "neg"},
+            .@"*" = "mul",
+            .@"/" = "div",
+            .@"<" = "lt",
+            .@"<=" = "lteq",
+            .@">" = "gt",
+            .@">=" = "gteq",
+            .@"==" = "eq",
+            .@"cos" = "cos",
+            .@"." = "dot",
+            .@"^" = "cross",
+            .@"%" = "mod",
+        },
+    )
 );
 
 /// convert the string expr into a series of function calls at compile time
