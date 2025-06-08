@@ -134,6 +134,14 @@ fn draw(
             }
         }
 
+        zgui.text(
+            "Application average {d:.3} ms/frame ({d:.1} FPS)",
+            .{ 
+                1000.0 / ziis.cimgui.igGetIO().*.Framerate,
+                ziis.cimgui.igGetIO().*.Framerate,
+            }
+        );
+
         var new = STATE.f;
         if (
             zgui.dragFloat("texture offset", .{ .v = &new })
