@@ -9,6 +9,7 @@ const comath_wrapper = @import("comath_wrapper.zig");
 
 const render_functions = @import("render_functions.zig");
 pub const CHECKPOINTS = render_functions.CHECKPOINTS;
+pub const CHECKPOINT_NAMES = render_functions.CHECKPOINT_NAMES;
 
 test
 {
@@ -26,9 +27,10 @@ pub fn render(
     allocator: std.mem.Allocator,
     img: *Image_rgba_u8,
     frame_number: usize,
+    current_renderer: usize,
 ) void
 {
-    return CHECKPOINTS[CHECKPOINTS.len - 1](allocator, img, frame_number);
+    return CHECKPOINTS[current_renderer](allocator, img, frame_number);
 }
 
 test "comath integration"
@@ -68,3 +70,50 @@ test "comath integration"
         try vector.expectV3fEqual(t.result, measured);
     }
 }
+
+ // test "further comath testing"
+ // {
+ //     // // method call first
+ //     // const a = vector.V3f.init(1);
+ //     // comath_wrapper.eval(
+ //     //     "a.length()",
+ //     //     .{ .a = a },
+ //     // );
+ //
+ //     // function call
+ //     // comath_wrapper.eval(
+ //     //     "vec3(0,0,1)",
+ //     //     .{},
+ //     // );
+ // }
+
+// const comath = @import("comath");
+//
+// fn lerp(
+//     u:f32,
+//     first:f32,
+//     second:f32
+// ) f32
+// {
+//     return u * first + (1.0 - u) * second;
+// }
+//
+// test "function call"
+// {
+//     const CTX = comath.ctx.fnMethod(
+//         comath.ctx.simple(
+//             // ?
+//             .{},
+//         ),
+//         // ?
+//         .{},
+//     );
+//
+//     const result = comath.eval(
+//         "lerp(0.5, 0.25, 1.25)",
+//         CTX,
+//         .{}
+//     );
+//
+//     try std.testing.expectEqual(0.75, result);
+// }

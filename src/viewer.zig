@@ -26,6 +26,7 @@ const STATE = struct {
     var frame_number: usize = 0;
     var buffer : raytrace.Image_rgba_u8 = undefined;
     var journal : ?ziis.undo.Journal = null;
+    var current_renderer: usize = raytrace.CHECKPOINTS.len - 1;
 };
 
 const IS_WASM = builtin.target.cpu.arch.isWasm();
@@ -73,7 +74,8 @@ fn draw(
             raytrace.render(
                 allocator,
                 &STATE.buffer,
-                STATE.frame_number
+                STATE.frame_number,
+                STATE.current_renderer,
             );
 
             data.subimage[0][0] = ziis.sokol.gfx.asRange(
@@ -108,6 +110,29 @@ fn draw(
     )
     {
         defer zgui.end();
+
+        const preview = raytrace.CHECKPOINT_NAMES[STATE.current_renderer];
+
+        if (zgui.beginCombo("Current Renderer", .{.preview_value = preview}))
+        {
+            defer zgui.endCombo();
+
+            for (raytrace.CHECKPOINT_NAMES, 0..)
+                |it, ind|
+            {
+                const is_selected = ind == STATE.current_renderer;
+
+                if (zgui.selectable(it, .{ .selected = is_selected } ))
+                {
+                    STATE.current_renderer = ind;
+                }
+
+                if (is_selected)
+                {
+                    zgui.setItemDefaultFocus();
+                }
+            }
+        }
 
         var new = STATE.f;
         if (
@@ -164,6 +189,8 @@ fn draw(
         {
             zplot.showDemoWindow(&STATE.demo_window_plot);
         }
+
+
 
         if (zgui.beginTabBar("Panes", .{}))
         {
