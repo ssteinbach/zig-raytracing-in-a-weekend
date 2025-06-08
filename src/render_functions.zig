@@ -15,16 +15,58 @@ pub const render_fn = *const fn(
 
 /// fun way of cataloging the history of the renders that this project can make
 pub const CHECKPOINTS:[]const render_fn = &[_]render_fn{
+    display_check,
     image_1,
     image_2.render,
     image_3.render,
 };
 
 pub const CHECKPOINT_NAMES = [_][:0]const u8{
+    "coordinate check",
     "Image 1 (color over image)",
     "Image 2 (ray.y = color)",
     "Image 3 (sphere hit)",
 };
+
+pub fn display_check(
+    _: std.mem.Allocator,
+    img: *raytrace.Image_rgba_u8,
+    _: usize,
+) void
+{
+    const cols = img.width;
+    const rows = img.height;
+
+    var x:usize = 0;
+    while (x < cols)
+        : (x += 1)
+    {
+        var y:usize = 0;
+        while (y < rows)
+            : (y += 1)
+        {
+            const RAD = 3;
+            const pixel_color_f = if (
+                (x < RAD and y < RAD)
+                or (x < RAD and y > rows - RAD)
+                or (x > cols - RAD and y < RAD)
+                or (x > cols - RAD and y > rows - RAD)
+            )
+                vector.Color3f.init([_]f32{1, 0, 0})
+            else
+                vector.Color3f.init([_]f32{0.2, 0.2, 0.2});
+
+            const pixel_color = pixel_color_f.mul(255.999).as(u8);
+
+            var pixel = img.pixel(x, y);
+
+            pixel[0] = pixel_color.x;
+            pixel[1] = pixel_color.y;
+            pixel[2] = 0;
+            pixel[3] = 255;
+        }
+    }
+}
 
 /// main render function - this is where the "main" code from Raytracing in a
 /// Weekend goes.
