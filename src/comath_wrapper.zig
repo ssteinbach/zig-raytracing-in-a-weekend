@@ -17,8 +17,6 @@ const CTX = (
                 .{
                     .v3 = vector.V3f.init_3,
                     .v2 = vector.V3f.init_2,
-                    .unit_vector = vector.V3f.unit_vector,
-                    .at = ray.Ray.at,
                 },
             )
         ),
@@ -133,4 +131,14 @@ pub fn lerp(
             .u = u,
         }
     );
+}
+
+test "method test"
+{
+    const result = eval(
+        "v3(1,2,3).unit_vector().length()",
+        .{}
+    );
+
+    try std.testing.expectApproxEqAbs(1, result, 0.0001);
 }

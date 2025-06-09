@@ -258,8 +258,8 @@ const Sphere = struct {
         const a = r.dir.length_squared();
         const h = r.dir.dot(oc);
         const c = oc.length_squared() - self.radius*self.radius;
-
         const discriminant = h*h - a*c;
+
         if (discriminant < 0)
         {
             return null;
@@ -409,7 +409,7 @@ const image_3 = struct {
 
 pub fn hit_sphere(
     s: Sphere,
-    r: ray.Ray
+    r: ray.Ray,
 ) ?BaseType
 {
     const oc = s.center_worldspace.sub(r.origin);
@@ -444,8 +444,8 @@ const image_4 = struct {
             |t|
         {
             return comath_wrapper.eval(
-                "(unit_vector(r_at_t - v3(0,0,-1)) + 1) * 0.5",
-                .{ .r_at_t = r.at(t) },
+                "((r.at(t) - v3(0,0,-1)).unit_vector() + 1) * 0.5",
+                .{ .r = r, .t = t },
             );
         }
 
@@ -601,12 +601,10 @@ const image_5 = struct {
         if (maybe_t) 
             |hitrec|
         {
-            const t = hitrec.t;
-            const n = comath_wrapper.eval(
-                "(unit_vector(r_at_t) - v3(0,0,-1) + 1) * 0.5",
-                .{ .r_at_t = r.at(t) },
+            return comath_wrapper.eval(
+                "(r.at(t) - v3(0,0,-1) + 1).unit_vector() * 0.5",
+                .{ .r = r, .t = hitrec.t },
             );
-            return n;
         }
 
         const unit_dir = r.dir.unit_vector();
