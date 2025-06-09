@@ -17,6 +17,7 @@ test
     _ = @import("comath_wrapper.zig");
     _ = @import("ray.zig");
     _ = @import("render_functions.zig");
+    _ = @import("abstract_test.zig");
 }
 
 pub const Image_rgba_u8 = image.Image(4, u8);
