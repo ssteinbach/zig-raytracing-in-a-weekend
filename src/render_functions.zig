@@ -247,6 +247,22 @@ const Sphere = struct {
     center_worldspace : vector.Point3f,
     radius: vector.V3f.BaseType,
 
+    pub fn format(
+        self: @This(),
+        comptime _: []const u8,
+        _: std.fmt.FormatOptions,
+        writer: anytype,
+    ) !void 
+    {
+        try writer.print(
+            "Sphere{{ {s}, {d} }}",
+            .{
+                self.center_worldspace,
+                self.radius,
+            },
+        );
+    }
+
     pub fn hit(
         self: @This(),
         r: ray.Ray,
@@ -586,6 +602,30 @@ pub const Hittable = union (enum) {
                     ray_tmax
                 )
                 else null
+            ),
+        };
+    }
+
+    pub fn format(
+        self: @This(),
+        comptime fmt: []const u8,
+        options: std.fmt.FormatOptions,
+        writer: anytype,
+    ) !void
+    {
+        return switch (self) {
+            inline else => |h| (
+                if (@hasDecl(@TypeOf(h), "format")) h.format(
+                    fmt,
+                    options,
+                    writer
+                )
+                else {
+                    std.debug.print(
+                        "type: {s} has no format \n",
+                        .{ @typeName(@TypeOf(h))}
+                    );
+                }
             ),
         };
     }
