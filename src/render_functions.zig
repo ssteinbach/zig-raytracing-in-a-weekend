@@ -295,11 +295,15 @@ const Sphere = struct {
         }
 
         const p = r.at(root);
-        return .{
+        var result : HitRecord = .{
             .t = root,
             .p = p,
-            .normal = (p.sub(self.center_worldspace).div(self.radius))
         };
+
+        const outward_normal = p.sub(self.center_worldspace).div(self.radius);
+        result.set_face_normal(r, outward_normal);
+        
+        return result;
     }
 };
 
@@ -579,13 +583,36 @@ const HitRecord = struct {
     /// hit point
     p: vector.Point3f,
     /// unit normal at the hit location
-    normal: vector.V3f,
+    normal: vector.V3f = .{},
     /// distance along the ray the hit occured
     t: BaseType,
+
+    pub fn set_face_normal(
+        self: *@This(),
+        r: ray.Ray,
+        outward_normal: vector.V3f,
+    ) void
+    {
+        const front_face = r.dir.dot(outward_normal) < 0;
+        self.*.normal = if (front_face) outward_normal else outward_normal.neg();
+    }
 };
 
 pub const Hittable = union (enum) {
     sphere : Sphere,
+
+    pub fn init(
+        thing: anytype,
+    ) Hittable
+    {
+        return switch (@TypeOf(thing)) {
+            Sphere => .{ .sphere = thing },
+            else => @compileError(
+                "Type " ++ @typeName(@TypeOf(thing)) ++ " is not hittable."
+                ),
+                
+        };
+    }
 
     pub fn hit (
         self: @This(),
@@ -596,7 +623,7 @@ pub const Hittable = union (enum) {
     {
         return switch (self) {
             inline else => |h| (
-                if (@hasField(h, "hit")) h.hit(
+                if (@hasDecl(@TypeOf(h), "hit")) h.hit(
                     r,
                     ray_tmin,
                     ray_tmax
@@ -631,27 +658,47 @@ pub const Hittable = union (enum) {
     }
 };
 
+pub const HittableList = std.ArrayList(Hittable);
+
+pub fn hit(
+    args: struct {
+        world: HittableList,
+        r: ray.Ray,
+        ray_tmin : BaseType = 0,
+        ray_tmax : BaseType = std.math.inf(BaseType),
+    },
+) ?HitRecord
+{
+    var maybe_first_hit : ?HitRecord = null;
+
+    for (args.world.items)
+        |it|
+    {
+        if (it.hit(args.r, args.ray_tmin, args.ray_tmax))
+            |hitrec|
+        {
+            if (maybe_first_hit == null or maybe_first_hit.?.t > hitrec.t)
+            {
+                maybe_first_hit = hitrec;
+            }
+        }
+    }
+
+    return maybe_first_hit;
+}
+
 const image_5 = struct {
     pub fn ray_color(
         r: ray.Ray,
+        world: HittableList,
     ) vector.Color3f
     {
-        const maybe_t = (
-            Sphere{
-                .center_worldspace = .{
-                    .x = 0,
-                    .y = 0,
-                    .z = -1,
-                },
-                .radius = 0.5,
-            }
-        ).hit(r, 0, 100);
-        if (maybe_t) 
+        if (hit(.{ .world = world, .r = r }) )
             |hitrec|
         {
             return comath_wrapper.eval(
-                "(r.at(t) - v3(0,0,-1) + 1).unit_vector() * 0.5",
-                .{ .r = r, .t = hitrec.t },
+                "(n + 1) * 0.5",
+                .{ .n = hitrec.normal },
             );
         }
 
@@ -666,11 +713,32 @@ const image_5 = struct {
     }
 
     pub fn render(
-        _: std.mem.Allocator,
+        allocator: std.mem.Allocator,
         img: *raytrace.Image_rgba_u8,
         _: usize,
     ) void
     {
+        // build the world
+        var world = HittableList.init(allocator);
+        defer world.deinit();
+
+        world.append(
+            Hittable.init(
+                Sphere{
+                    .center_worldspace = vector.V3f.init_3(0,0,-1),
+                    .radius = 0.5,
+                }
+            )
+        ) catch @panic("OOM!");
+        world.append(
+            Hittable.init(
+                Sphere{
+                    .center_worldspace = vector.V3f.init_3(0, -100.5,-1),
+                    .radius = 100,
+                }
+            )
+        ) catch @panic("OOM!");
+
         const aspect_ratio:vector.V3f.BaseType = @floatFromInt(img.width / img.height);
         const image_width:usize = img.width;
 
@@ -750,7 +818,7 @@ const image_5 = struct {
                 };
 
                 // scale and convert to output pixel format
-                const pixel_color = ray_color(r).mul(255.999).as(u8);
+                const pixel_color = ray_color(r, world).mul(255.999).as(u8);
 
                 var pixel = img.pixel(i, j);
 
