@@ -5,8 +5,10 @@ const raytrace = @import("root.zig");
 const ray = @import("ray.zig");
 const vector = @import("vector.zig");
 const comath_wrapper = @import("comath_wrapper.zig");
+const utils = @import("utils.zig");
 
 const BaseType = vector.V3f.BaseType;
+const INF = std.math.inf(BaseType);
 
 /// pointer to a render function
 pub const render_fn = *const fn(
