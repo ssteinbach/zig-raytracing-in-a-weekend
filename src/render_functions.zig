@@ -25,6 +25,7 @@ pub const CHECKPOINTS:[]const render_fn = &[_]render_fn{
     image_3.render,
     image_4.render,
     image_5.render,
+    image_6.render,
 };
 
 pub const CHECKPOINT_NAMES = [_][:0]const u8{
@@ -34,6 +35,7 @@ pub const CHECKPOINT_NAMES = [_][:0]const u8{
     "Image 3 (sphere hit)",
     "Image 4 (sphere color)",
     "Image 5 (sphere color w/ Hittable)",
+    "Image 6 (Diffuse Materials)",
 };
 
 pub fn display_check(
@@ -821,6 +823,245 @@ const image_5 = struct {
 
                 // scale and convert to output pixel format
                 const pixel_color = ray_color(r, world).mul(255.999).as(u8);
+
+                var pixel = img.pixel(i, j);
+
+                pixel[0] = pixel_color.x;
+                pixel[1] = pixel_color.y;
+                pixel[2] = pixel_color.z;
+                pixel[3] = 255;
+            }
+        }
+    }
+};
+
+pub const Interval = struct {
+    start: BaseType = INF,
+    end: BaseType = -INF,
+    
+    pub const EMPTY: Interval = .{ .start = INF, .end = -INF};
+    pub const EVERYTHING: Interval = .{ .start = -INF, .end = INF};
+    pub const UNIT_RIGHT_INCLUSIVE: Interval = .{ .start = 0, .end = 1 };
+    pub const UNIT_RIGHT_EXCLUSIVE: Interval = .{ .start = 0, .end = 0.99999 };
+
+    pub fn size(
+        self: @This(),
+    ) BaseType
+    {
+        // assumes that end > start
+        return self.end - self.start;
+    }
+    
+    pub fn contains(
+        self: @This(),
+        ord: anytype,
+    ) bool
+    {
+        return switch (@typeInfo(@TypeOf(ord))) {
+            .@"struct" => (
+                self.start <= ord.x and ord.x <= self.end
+                and self.start <= ord.y and ord.y <= self.end
+                and self.start <= ord.z and ord.z <= self.end
+            ),
+            .@"float", .@"int", .comptime_float, .comptime_int => (
+                self.start <= ord and self.end >= ord
+            ),
+            else => @compileError(
+                "cannot compare to things of type: " ++ @typeName(@TypeOf(ord))
+            ),
+        };
+    }
+
+    pub fn surrounds(
+        self: @This(),
+        ord: BaseType,
+    ) bool
+    {
+        return self.start < ord and self.end > ord;
+    }
+
+    pub fn clamp(
+        self: @This(),
+        ord: anytype,
+    ) @TypeOf(ord)
+    {
+        return switch (@typeInfo(@TypeOf(ord))) {
+            .@"struct" => comath_wrapper.eval(
+            "ord.min(hi).max(low)",
+            .{ .low = self.start, .ord = ord, .hi = self.end },
+            ),
+            .@"float", .@"int", .comptime_float, .comptime_int => (
+                @min(@max(ord, self.end), self.start)
+            ),
+            else => @compileError(
+                "cannot clamp things of type: " ++ @typeName(@TypeOf(ord))
+            ),
+        };
+    }
+};
+
+test "clamp"
+{
+    for (
+        &[_]Interval{
+            Interval{ .start = -3, .end = 5 }
+        }
+    ) |t_i|
+    {
+        for (
+            &[_]BaseType{ -4, -1 , 0, 1, 6, 1231242342 }
+        ) |t_ord|
+        {
+            try std.testing.expect(
+                t_i.contains(
+                    t_i.clamp(t_ord)
+                )
+            );
+
+            try std.testing.expect(
+                t_i.contains(
+                    t_i.clamp(vector.V3f.init(t_ord))
+                )
+            );
+        }
+    }
+
+}
+
+const image_6 = struct {
+    pub fn ray_color(
+        r: ray.Ray,
+        world: HittableList,
+    ) vector.Color3f
+    {
+        if (hit(.{ .world = world, .r = r }) )
+            |hitrec|
+        {
+            return comath_wrapper.eval(
+                "(n + 1) * 0.5",
+                .{ .n = hitrec.normal },
+            );
+        }
+
+        const unit_dir = r.dir.unit_vector();
+        const a = 0.5 * (unit_dir.y + 1.0);
+
+        return comath_wrapper.lerp(
+            a,
+            vector.Color3f.init(1.0),
+            vector.Color3f.init([_]f32{0.5, 0.7, 1.0}),
+        );
+    }
+
+    pub fn render(
+        allocator: std.mem.Allocator,
+        img: *raytrace.Image_rgba_u8,
+        _: usize,
+    ) void
+    {
+        // build the world
+        var world = HittableList.init(allocator);
+        defer world.deinit();
+
+        world.append(
+            Hittable.init(
+                Sphere{
+                    .center_worldspace = vector.V3f.init_3(0,0,-1),
+                    .radius = 0.5,
+                }
+            )
+        ) catch @panic("OOM!");
+        world.append(
+            Hittable.init(
+                Sphere{
+                    .center_worldspace = vector.V3f.init_3(0, -100.5,-1),
+                    .radius = 100,
+                }
+            )
+        ) catch @panic("OOM!");
+
+        const aspect_ratio:vector.V3f.BaseType = @floatFromInt(img.width / img.height);
+        const image_width:usize = img.width;
+
+        const image_height:usize = @intFromFloat(
+            @max(1.0, @as(BaseType, @floatFromInt(image_width)) / aspect_ratio)
+        );
+
+        const viewport_height : BaseType = 2.0;
+        const viewport_width : BaseType = (
+            (
+             viewport_height 
+             * @as(BaseType, @floatFromInt(image_width))) / @as(BaseType, @floatFromInt(image_height))
+            );
+
+        const camera = struct {
+            const focal_length : BaseType = 1.0;
+
+            // camera at the origin
+            const center = vector.Point3f.init(0);
+        };
+
+        const viewport_u: vector.V3f = .{ 
+            .x = viewport_width,
+            .y = 0,
+            .z = 0,
+        };
+        const viewport_v: vector.V3f = .{ 
+            .x = 0,
+            .y = -viewport_height,
+            .z = 0,
+        };
+
+        const pixel_delta_u = viewport_u.div(image_width);
+        const pixel_delta_v = viewport_v.div(image_height);
+
+        const viewport_upper_left = comath_wrapper.eval(
+            "camera_center - v_fl - (v_u/2) - (v_v/2)",
+            .{
+                .camera_center = camera.center,
+                .v_fl = vector.V3f.init([_]BaseType{0,0, camera.focal_length}),
+                .v_u = viewport_u,
+                .v_v = viewport_v,
+            },
+        );
+
+        const pixel00_loc = comath_wrapper.eval(
+            "v_ul + (pdu + pdv) * 0.5",
+            .{
+                .v_ul = viewport_upper_left,
+                .pdu = pixel_delta_u,
+                .pdv = pixel_delta_v,
+            },
+        );
+
+        var j:usize = 0;
+        while (j < image_height)
+            : (j+=1)
+        {
+            var i:usize = 0;
+            while (i < image_width)
+                : (i+=1)
+            {
+                const pixel_center = comath_wrapper.eval(
+                    "p00 + (p_du*i) + (p_dv * j)",
+                    .{ 
+                        .p00 = pixel00_loc,
+                        .p_du = pixel_delta_u,
+                        .p_dv = pixel_delta_v,
+                        .i = i,
+                        .j = j,
+                    },
+                );
+
+                const r = ray.Ray{
+                    .origin = camera.center,
+                    .dir = pixel_center.sub(camera.center),
+                };
+
+                // scale and convert to output pixel foormat
+                const pixel_color = Interval.UNIT_RIGHT_EXCLUSIVE.clamp(
+                    ray_color(r, world))
+                .mul(256).as(u8);
 
                 var pixel = img.pixel(i, j);
 

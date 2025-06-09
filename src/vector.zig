@@ -277,7 +277,7 @@ pub fn Vec3Of(
             };
         }
 
-        pub inline fn min(
+        pub fn min(
             self: @This(),
             rhs: anytype,
         ) VecType
@@ -294,7 +294,7 @@ pub fn Vec3Of(
             };
         }
 
-        pub inline fn max(
+        pub fn max(
             self: @This(),
             rhs: anytype,
         ) VecType
