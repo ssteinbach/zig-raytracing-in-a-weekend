@@ -22,6 +22,7 @@ pub const CHECKPOINTS:[]const render_fn = &[_]render_fn{
     image_2.render,
     image_3.render,
     image_4.render,
+    image_5.render,
 };
 
 pub const CHECKPOINT_NAMES = [_][:0]const u8{
@@ -30,6 +31,7 @@ pub const CHECKPOINT_NAMES = [_][:0]const u8{
     "Image 2 (ray.y = color)",
     "Image 3 (sphere hit)",
     "Image 4 (sphere color)",
+    "Image 5 (sphere color w/ Hittable)",
 };
 
 pub fn display_check(
@@ -244,6 +246,45 @@ const image_2 = struct {
 const Sphere = struct {
     center_worldspace : vector.Point3f,
     radius: vector.V3f.BaseType,
+
+    pub fn hit(
+        self: @This(),
+        r: ray.Ray,
+        ray_tmin: BaseType,
+        ray_tmax: BaseType,
+    ) ?HitRecord
+    {
+        const oc = self.center_worldspace.sub(r.origin);
+        const a = r.dir.length_squared();
+        const h = r.dir.dot(oc);
+        const c = oc.length_squared() - self.radius*self.radius;
+
+        const discriminant = h*h - a*c;
+        if (discriminant < 0)
+        {
+            return null;
+        }
+
+        const sqrtd = std.math.sqrt(discriminant);
+
+        // Find the nearest root that lies in the acceptable range.
+        var root = (h - sqrtd) / a;
+        if ((root <= ray_tmin) or (ray_tmax <= root)) 
+        {
+            root = (h + sqrtd) / a;
+            if ((root <= ray_tmin) or (ray_tmax <= root))
+            {
+                return null;
+            }
+        }
+
+        const p = r.at(root);
+        return .{
+            .t = root,
+            .p = p,
+            .normal = (p.sub(self.center_worldspace).div(self.radius))
+        };
+    }
 };
 
 
@@ -402,8 +443,10 @@ const image_4 = struct {
         if (maybe_t) 
             |t|
         {
-            const N = r.at(t).sub(vector.V3f.init([_]f32{0,0,-1})).unit_vector();
-            return N.add(1).mul(0.5);
+            return comath_wrapper.eval(
+                "(unit_vector(r_at_t - v3(0,0,-1)) + 1) * 0.5",
+                .{ .r_at_t = r.at(t) },
+            );
         }
 
         const unit_dir = r.dir.unit_vector();
@@ -416,6 +459,165 @@ const image_4 = struct {
         );
     }
 
+
+    pub fn render(
+        _: std.mem.Allocator,
+        img: *raytrace.Image_rgba_u8,
+        _: usize,
+    ) void
+    {
+        const aspect_ratio:vector.V3f.BaseType = @floatFromInt(img.width / img.height);
+        const image_width:usize = img.width;
+
+        const image_height:usize = @intFromFloat(
+            @max(1.0, @as(BaseType, @floatFromInt(image_width)) / aspect_ratio)
+        );
+
+        const viewport_height : BaseType = 2.0;
+        const viewport_width : BaseType = (
+            (
+             viewport_height 
+             * @as(BaseType, @floatFromInt(image_width))) / @as(BaseType, @floatFromInt(image_height))
+            );
+
+        const camera = struct {
+            const focal_length : BaseType = 1.0;
+
+            // camera at the origin
+            const center = vector.Point3f.init(0);
+        };
+
+        const viewport_u: vector.V3f = .{ 
+            .x = viewport_width,
+            .y = 0,
+            .z = 0,
+        };
+        const viewport_v: vector.V3f = .{ 
+            .x = 0,
+            .y = -viewport_height,
+            .z = 0,
+        };
+
+        const pixel_delta_u = viewport_u.div(image_width);
+        const pixel_delta_v = viewport_v.div(image_height);
+
+        const viewport_upper_left = comath_wrapper.eval(
+            "camera_center - v3(0,0,focal_length) - (v_u/2) - (v_v/2)",
+            .{
+                .camera_center = camera.center,
+                .focal_length = camera.focal_length,
+                .v_u = viewport_u,
+                .v_v = viewport_v,
+            },
+        );
+
+        const pixel00_loc = comath_wrapper.eval(
+            "v_ul + (pdu + pdv) * 0.5",
+            .{
+                .v_ul = viewport_upper_left,
+                .pdu = pixel_delta_u,
+                .pdv = pixel_delta_v,
+            },
+        );
+
+        var j:usize = 0;
+        while (j < image_height)
+            : (j+=1)
+        {
+            var i:usize = 0;
+            while (i < image_width)
+                : (i+=1)
+            {
+                const pixel_center = comath_wrapper.eval(
+                    "p00 + (p_du*i) + (p_dv * j)",
+                    .{ 
+                        .p00 = pixel00_loc,
+                        .p_du = pixel_delta_u,
+                        .p_dv = pixel_delta_v,
+                        .i = i,
+                        .j = j,
+                    },
+                );
+
+                const r = ray.Ray{
+                    .origin = camera.center,
+                    .dir = pixel_center.sub(camera.center),
+                };
+
+                // scale and convert to output pixel format
+                const pixel_color = ray_color(r).mul(255.999).as(u8);
+
+                var pixel = img.pixel(i, j);
+
+                pixel[0] = pixel_color.x;
+                pixel[1] = pixel_color.y;
+                pixel[2] = pixel_color.z;
+                pixel[3] = 255;
+            }
+        }
+    }
+};
+
+const HitRecord = struct {
+    p: vector.Point3f,
+    normal: vector.V3f,
+    t: BaseType,
+};
+
+pub const Hittable = union (enum) {
+    sphere : Sphere,
+
+    pub fn hit (
+        self: @This(),
+        r: ray.Ray,
+        ray_tmin: BaseType,
+        ray_tmax: BaseType,
+    ) ?HitRecord
+    {
+        return switch (self) {
+            inline else => |h| (
+                if (@hasField(h, "hit")) h.hit(
+                    r,
+                    ray_tmin,
+                    ray_tmax
+                )
+                else null
+            ),
+        };
+    }
+};
+
+const image_5 = struct {
+    pub fn ray_color(
+        r: ray.Ray,
+    ) vector.Color3f
+    {
+        const maybe_t = (
+            Sphere{
+                .center_worldspace = .{ .x = 0, .y = 0, .z = -1 },
+                .radius = 0.5 
+            }
+        ).hit(r, 0, 100);
+        if (maybe_t) 
+            |hitrec|
+        {
+            const t = hitrec.t;
+            const n = comath_wrapper.eval(
+                "(unit_vector(r_at_t) - v3(0,0,-1) + 1) * 0.5",
+                .{ .r_at_t = r.at(t) },
+            );
+            return n;
+        }
+
+        const unit_dir = r.dir.unit_vector();
+        const a = 0.5 * (unit_dir.y + 1.0);
+
+        return comath_wrapper.lerp(
+            a,
+            vector.Color3f.init(1.0),
+            vector.Color3f.init([_]f32{0.5, 0.7, 1.0}),
+        );
+    }
 
     pub fn render(
         _: std.mem.Allocator,
