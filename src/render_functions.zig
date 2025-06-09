@@ -558,9 +558,13 @@ const image_4 = struct {
     }
 };
 
+/// represents a hit along a ray in the scene
 const HitRecord = struct {
+    /// hit point
     p: vector.Point3f,
+    /// unit normal at the hit location
     normal: vector.V3f,
+    /// distance along the ray the hit occured
     t: BaseType,
 };
 
@@ -594,8 +598,12 @@ const image_5 = struct {
     {
         const maybe_t = (
             Sphere{
-                .center_worldspace = .{ .x = 0, .y = 0, .z = -1 },
-                .radius = 0.5 
+                .center_worldspace = .{
+                    .x = 0,
+                    .y = 0,
+                    .z = -1,
+                },
+                .radius = 0.5,
             }
         ).hit(r, 0, 100);
         if (maybe_t) 
