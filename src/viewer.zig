@@ -66,6 +66,8 @@ fn draw(
 
     STATE.frame_number = @intFromFloat(@abs(STATE.f));
 
+    const t_start = try std.time.Instant.now();
+
     sg.updateImage(
         STATE.tex,
         init: {
@@ -84,6 +86,8 @@ fn draw(
             break :init data;
         },
     );
+
+    var t_stop = try std.time.Instant.now();
 
     zgui.setNextWindowPos(.{ .x = 0, .y = 0 });
     zgui.setNextWindowSize(
@@ -134,11 +138,12 @@ fn draw(
             }
         }
 
+        const elapsed_render : f64 = @floatFromInt(t_stop.since(t_start));
         zgui.text(
-            "Application average {d:.3} ms/frame ({d:.1} FPS)",
+            "Application average {d:.3} ms/frame ({d:.3} FPS)",
             .{ 
-                1000.0 / ziis.cimgui.igGetIO().*.Framerate,
-                ziis.cimgui.igGetIO().*.Framerate,
+                elapsed_render / std.time.ns_per_ms,
+                std.time.ns_per_s / (elapsed_render),
             }
         );
 

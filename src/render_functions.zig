@@ -270,7 +270,7 @@ const Sphere = struct {
     pub fn hit(
         self: @This(),
         r: ray.Ray,
-        interval: Interval,
+        interval: utils.Interval,
     ) ?HitRecord
     {
         const oc = self.center_worldspace.sub(r.origin);
@@ -620,7 +620,7 @@ pub const Hittable = union (enum) {
     pub fn hit (
         self: @This(),
         r: ray.Ray,
-        interval: Interval,
+        interval: utils.Interval,
     ) ?HitRecord
     {
         return switch (self) {
@@ -665,7 +665,7 @@ pub fn hit_world(
     args: struct {
         world: HittableList,
         r: ray.Ray,
-        interval: Interval,
+        interval: utils.Interval,
     },
 ) ?HitRecord
 {
@@ -698,7 +698,7 @@ const image_5 = struct {
                 .{ 
                     .world = world,
                     .r = r,
-                    .interval = Interval.ZERO_TO_INF, 
+                    .interval = utils.Interval.ZERO_TO_INF, 
                 }
             ) 
         )
@@ -839,88 +839,11 @@ const image_5 = struct {
     }
 };
 
-pub const Interval = struct {
-    start: BaseType = INF,
-    end: BaseType = -INF,
-    
-    pub const EMPTY: Interval = .{ .start = INF, .end = -INF};
-    pub const EVERYTHING: Interval = .{ .start = -INF, .end = INF};
-    pub const UNIT_RIGHT_INCLUSIVE: Interval = .{ .start = 0, .end = 1 };
-    pub const UNIT_RIGHT_EXCLUSIVE: Interval = .{ .start = 0, .end = 0.99999 };
-    pub const ZERO_TO_INF: Interval = .{ .start = 0, .end = INF };
-
-    pub fn size(
-        self: @This(),
-    ) BaseType
-    {
-        // assumes that end > start
-        return self.end - self.start;
-    }
-    
-    pub fn contains(
-        self: @This(),
-        ord: anytype,
-    ) bool
-    {
-        return switch (@typeInfo(@TypeOf(ord))) {
-            .@"struct" => (
-                self.start <= ord.x and ord.x <= self.end
-                and self.start <= ord.y and ord.y <= self.end
-                and self.start <= ord.z and ord.z <= self.end
-            ),
-            .@"float", .@"int", .comptime_float, .comptime_int => (
-                self.start <= ord and self.end >= ord
-            ),
-            else => @compileError(
-                "cannot compare to things of type: " 
-                ++ @typeName(@TypeOf(ord))
-            ),
-        };
-    }
-
-    pub fn surrounds(
-        self: @This(),
-        ord: BaseType,
-    ) bool
-    {
-        return switch (@typeInfo(@TypeOf(ord))) {
-            .@"struct" => (
-                self.start < ord.x and ord.x < self.end
-                and self.start < ord.y and ord.y < self.end
-                and self.start < ord.z and ord.z < self.end
-            ),
-            .@"float", .@"int", .comptime_float, .comptime_int => (
-                self.start < ord and ord < self.end
-            ),
-            else => @compileError(
-                "cannot compare to things of type: " 
-                ++ @typeName(@TypeOf(ord))
-            ),
-        };
-    }
-
-    pub fn clamp(
-        self: @This(),
-        ord: anytype,
-    ) @TypeOf(ord)
-    {
-        return switch (@typeInfo(@TypeOf(ord))) {
-            .@"struct" => ord.max(self.start).min(self.end),
-            .@"float", .@"int", .comptime_float, .comptime_int => (
-                @min(@max(ord, self.end), self.start)
-            ),
-            else => @compileError(
-                "cannot clamp things of type: " ++ @typeName(@TypeOf(ord))
-            ),
-        };
-    }
-};
-
 test "clamp"
 {
     for (
-        &[_]Interval{
-            Interval{ .start = -3, .end = 5 }
+        &[_]utils.Interval{
+            utils.Interval{ .start = -3, .end = 5 }
         }
     ) |t_i|
     {
@@ -957,7 +880,10 @@ const image_6 = struct {
         pixel_delta_u: vector.V3f,
         pixel_delta_v: vector.V3f,
 
-        const samples_per_pixel = 10;
+        const samples_per_pixel:usize = 10;
+        const pixel_sample_scale:BaseType = (
+            1.0/@as(BaseType, @floatFromInt(samples_per_pixel))
+        );
 
         pub fn init(
             focal_length: BaseType,
@@ -1030,7 +956,7 @@ const image_6 = struct {
                     .{ 
                         .world = world,
                         .r = r,
-                        .interval = Interval.ZERO_TO_INF,
+                        .interval = utils.Interval.ZERO_TO_INF,
                     }
                 ) 
             )
@@ -1065,39 +991,62 @@ const image_6 = struct {
                 while (i < self.image_width)
                     : (i+=1)
                 {
-                    const pixel_center = comath_wrapper.eval(
-                        "p00 + (p_du*i) + (p_dv * j)",
-                        .{ 
-                            .p00 = self.pixel00_loc,
-                            .p_du = self.pixel_delta_u,
-                            .p_dv = self.pixel_delta_v,
-                            .i = i,
-                            .j = j,
-                        },
+                    var pixel_color = vector.Color3f.init(0);
+
+                    var sample: usize = 0;
+                    while (sample < samples_per_pixel)
+                        : (sample += 1)
+                    {
+                        const r = self.get_ray(
+                            @floatFromInt(i),
+                            @floatFromInt(j)
                         );
 
-                    const r = ray.Ray{
-                        .origin = self.center,
-                        .dir = pixel_center.sub(self.center),
-                    };
+                        // scale and convert to output pixel foormat
+                        pixel_color = pixel_color.add(ray_color(r, world));
+                    }
+                    img.write_pixel(i,j, pixel_color.mul(pixel_sample_scale));
 
-                    // scale and convert to output pixel foormat
-                    const pixel_color = Interval.UNIT_RIGHT_EXCLUSIVE.clamp(
-                        ray_color(r, world))
-                        .mul(256).as(u8);
-
-                    var pixel = img.pixel(i, j);
-
-                    pixel[0] = pixel_color.x;
-                    pixel[1] = pixel_color.y;
-                    pixel[2] = pixel_color.z;
-                    pixel[3] = 255;
                 }
             }
 
         }
-    };
 
+        fn get_ray(
+            self: @This(),
+            i: BaseType,
+            j: BaseType,
+        ) ray.Ray 
+        {
+            const offset = sample_square();
+            const pixel_sample = comath_wrapper.eval(
+                "p00 + (pdu*(i + o_x)) + (pdv*(j+o_y))",
+                .{
+                    .p00 = self.pixel00_loc,
+                    .i = i,
+                    .j = j,
+                    .o_x = offset.x,
+                    .o_y = offset.y,
+                    .pdu = self.pixel_delta_u,
+                    .pdv = self.pixel_delta_v,
+                },
+            );
+
+            return .{
+                .origin = self.center,
+                .dir = pixel_sample.sub(self.center),
+            };
+        }
+
+        fn sample_square() vector.V3f
+        {
+            return .{
+                .x = utils.rnd_num(BaseType) - 0.5,
+                .y = utils.rnd_num(BaseType) - 0.5,
+                .z = 0
+            };
+        }
+    };
 
     pub fn render(
         allocator: std.mem.Allocator,
