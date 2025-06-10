@@ -943,67 +943,161 @@ test "clamp"
     }
 }
 
-const Camera = struct {
-    /// focal length of the camera (thin lens) of 1.0
-    focal_length : BaseType = 1.0,
-    /// camera at the origin by default
-    center :vector.V3f = vector.Point3f.init(0),
-
-    const samples_per_pixel = 10;
-
-    // pub fn render(
-    //     world: HittableList,
-    // ) void
-    // {
-    //     initialize();
-    //
-    //     var j:usize = 0;
-    //
-    //     for (int j = 0; j < image_height; j++) {
-    //         for (int i = 0; i < image_width; i++) {
-    //             color pixel_color(0,0,0);
-    //             for (int sample = 0; sample < samples_per_pixel; sample++) {
-    //                 ray r = get_ray(i, j);
-    //                 pixel_color += ray_color(r, world);
-    //             }
-    //             write_color(std::cout, pixel_samples_scale * pixel_color);
-    //         }
-    //     }
-    // }
-};
-
 const image_6 = struct {
-    pub fn ray_color(
-        r: ray.Ray,
-        world: HittableList,
-    ) vector.Color3f
-    {
-        if (
-            hit_world(
-                .{ 
-                    .world = world,
-                    .r = r,
-                    .interval = Interval.ZERO_TO_INF,
-                }
-            ) 
-        )
-            |hitrec|
+    const Camera = struct {
+        /// focal length of the camera (thin lens) of 1.0
+        focal_length : BaseType = 1.0,
+        /// camera at the origin by default
+        center :vector.V3f = vector.Point3f.init(0),
+
+        image_width: usize,
+        image_height: usize,
+
+        pixel00_loc: vector.Point3f,
+        pixel_delta_u: vector.V3f,
+        pixel_delta_v: vector.V3f,
+
+        const samples_per_pixel = 10;
+
+        pub fn init(
+            focal_length: BaseType,
+            center: vector.V3f,
+            img: *raytrace.Image_rgba_u8,
+        ) @This()
         {
-            return comath_wrapper.eval(
-                "(n + 1) * 0.5",
-                .{ .n = hitrec.normal },
+            const aspect_ratio:vector.V3f.BaseType = @floatFromInt(img.width / img.height);
+            const image_width:usize = img.width;
+            const image_height:usize = @intFromFloat(
+                @max(1.0, @as(BaseType, @floatFromInt(image_width)) / aspect_ratio)
+            );
+
+            const viewport_height : BaseType = 2.0;
+            const viewport_width : BaseType = (
+                (
+                 viewport_height 
+                 * @as(BaseType, @floatFromInt(image_width))) / @as(BaseType, @floatFromInt(image_height))
+            );
+
+            const viewport_u: vector.V3f = .{ 
+                .x = viewport_width,
+                .y = 0,
+                .z = 0,
+            };
+            const viewport_v: vector.V3f = .{ 
+                .x = 0,
+                .y = -viewport_height,
+                .z = 0,
+            };
+
+            const viewport_upper_left = comath_wrapper.eval(
+                "camera_center - v_fl - (v_u/2) - (v_v/2)",
+                .{
+                    .camera_center = center,
+                    .v_fl = vector.V3f.init([_]BaseType{0,0, focal_length}),
+                    .v_u = viewport_u,
+                    .v_v = viewport_v,
+                },
+                );
+
+            const pixel_delta_u = viewport_u.div(image_width);
+            const pixel_delta_v = viewport_v.div(image_height);
+
+            return .{
+                .center = center,
+                .focal_length = focal_length,
+                .image_width = image_width,
+                .image_height = image_height,
+                .pixel_delta_u = pixel_delta_u,
+                .pixel_delta_v = pixel_delta_v,
+                .pixel00_loc = comath_wrapper.eval(
+                    "v_ul + (pdu + pdv) * 0.5",
+                    .{
+                        .v_ul = viewport_upper_left,
+                        .pdu = pixel_delta_u,
+                        .pdv = pixel_delta_v,
+                    },
+                ),
+            };
+        }
+
+        pub fn ray_color(
+            r: ray.Ray,
+            world: HittableList,
+        ) vector.Color3f
+        {
+            if (
+                hit_world(
+                    .{ 
+                        .world = world,
+                        .r = r,
+                        .interval = Interval.ZERO_TO_INF,
+                    }
+                ) 
+            )
+                |hitrec|
+            {
+                return comath_wrapper.eval(
+                    "(n + 1) * 0.5",
+                    .{ .n = hitrec.normal },
+                );
+            }
+
+            const a = 0.5 * (r.dir.unit_vector().y + 1.0);
+
+            return comath_wrapper.lerp(
+                a,
+                vector.Color3f.init(1.0),
+                vector.Color3f.init([_]f32{0.5, 0.7, 1.0}),
             );
         }
 
-        const unit_dir = r.dir.unit_vector();
-        const a = 0.5 * (unit_dir.y + 1.0);
+        pub fn render(
+            self: @This(),
+            world: HittableList,
+            img: *raytrace.Image_rgba_u8,
+        ) void
+        {
+            var j:usize = 0;
+            while (j < self.image_height)
+                : (j+=1)
+            {
+                var i:usize = 0;
+                while (i < self.image_width)
+                    : (i+=1)
+                {
+                    const pixel_center = comath_wrapper.eval(
+                        "p00 + (p_du*i) + (p_dv * j)",
+                        .{ 
+                            .p00 = self.pixel00_loc,
+                            .p_du = self.pixel_delta_u,
+                            .p_dv = self.pixel_delta_v,
+                            .i = i,
+                            .j = j,
+                        },
+                        );
 
-        return comath_wrapper.lerp(
-            a,
-            vector.Color3f.init(1.0),
-            vector.Color3f.init([_]f32{0.5, 0.7, 1.0}),
-        );
-    }
+                    const r = ray.Ray{
+                        .origin = self.center,
+                        .dir = pixel_center.sub(self.center),
+                    };
+
+                    // scale and convert to output pixel foormat
+                    const pixel_color = Interval.UNIT_RIGHT_EXCLUSIVE.clamp(
+                        ray_color(r, world))
+                        .mul(256).as(u8);
+
+                    var pixel = img.pixel(i, j);
+
+                    pixel[0] = pixel_color.x;
+                    pixel[1] = pixel_color.y;
+                    pixel[2] = pixel_color.z;
+                    pixel[3] = 255;
+                }
+            }
+
+        }
+    };
+
 
     pub fn render(
         allocator: std.mem.Allocator,
@@ -1032,96 +1126,13 @@ const image_6 = struct {
             )
         ) catch @panic("OOM!");
 
-        const aspect_ratio:vector.V3f.BaseType = @floatFromInt(img.width / img.height);
-        const image_width:usize = img.width;
-
-        const image_height:usize = @intFromFloat(
-            @max(1.0, @as(BaseType, @floatFromInt(image_width)) / aspect_ratio)
-        );
-
-        const viewport_height : BaseType = 2.0;
-        const viewport_width : BaseType = (
-            (
-             viewport_height 
-             * @as(BaseType, @floatFromInt(image_width))) / @as(BaseType, @floatFromInt(image_height))
-            );
-
-        const camera = struct {
-            const focal_length : BaseType = 1.0;
-
+        const camera = Camera.init(
+            1.0,
             // camera at the origin
-            const center = vector.Point3f.init(0);
-        };
-
-        const viewport_u: vector.V3f = .{ 
-            .x = viewport_width,
-            .y = 0,
-            .z = 0,
-        };
-        const viewport_v: vector.V3f = .{ 
-            .x = 0,
-            .y = -viewport_height,
-            .z = 0,
-        };
-
-        const pixel_delta_u = viewport_u.div(image_width);
-        const pixel_delta_v = viewport_v.div(image_height);
-
-        const viewport_upper_left = comath_wrapper.eval(
-            "camera_center - v_fl - (v_u/2) - (v_v/2)",
-            .{
-                .camera_center = camera.center,
-                .v_fl = vector.V3f.init([_]BaseType{0,0, camera.focal_length}),
-                .v_u = viewport_u,
-                .v_v = viewport_v,
-            },
+            vector.Point3f.init(0),
+            img,
         );
 
-        const pixel00_loc = comath_wrapper.eval(
-            "v_ul + (pdu + pdv) * 0.5",
-            .{
-                .v_ul = viewport_upper_left,
-                .pdu = pixel_delta_u,
-                .pdv = pixel_delta_v,
-            },
-        );
-
-        var j:usize = 0;
-        while (j < image_height)
-            : (j+=1)
-        {
-            var i:usize = 0;
-            while (i < image_width)
-                : (i+=1)
-            {
-                const pixel_center = comath_wrapper.eval(
-                    "p00 + (p_du*i) + (p_dv * j)",
-                    .{ 
-                        .p00 = pixel00_loc,
-                        .p_du = pixel_delta_u,
-                        .p_dv = pixel_delta_v,
-                        .i = i,
-                        .j = j,
-                    },
-                );
-
-                const r = ray.Ray{
-                    .origin = camera.center,
-                    .dir = pixel_center.sub(camera.center),
-                };
-
-                // scale and convert to output pixel foormat
-                const pixel_color = Interval.UNIT_RIGHT_EXCLUSIVE.clamp(
-                    ray_color(r, world))
-                .mul(256).as(u8);
-
-                var pixel = img.pixel(i, j);
-
-                pixel[0] = pixel_color.x;
-                pixel[1] = pixel_color.y;
-                pixel[2] = pixel_color.z;
-                pixel[3] = 255;
-            }
-        }
+        camera.render(world, img);
     }
 };
