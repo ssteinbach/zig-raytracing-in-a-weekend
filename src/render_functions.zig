@@ -270,8 +270,7 @@ const Sphere = struct {
     pub fn hit(
         self: @This(),
         r: ray.Ray,
-        ray_tmin: BaseType,
-        ray_tmax: BaseType,
+        interval: Interval,
     ) ?HitRecord
     {
         const oc = self.center_worldspace.sub(r.origin);
@@ -289,10 +288,10 @@ const Sphere = struct {
 
         // Find the nearest root that lies in the acceptable range.
         var root = (h - sqrtd) / a;
-        if ((root <= ray_tmin) or (ray_tmax <= root)) 
+        if (interval.surrounds(root) == false) 
         {
             root = (h + sqrtd) / a;
-            if ((root <= ray_tmin) or (ray_tmax <= root))
+            if (interval.surrounds(root) == false)
             {
                 return null;
             }
@@ -621,16 +620,14 @@ pub const Hittable = union (enum) {
     pub fn hit (
         self: @This(),
         r: ray.Ray,
-        ray_tmin: BaseType,
-        ray_tmax: BaseType,
+        interval: Interval,
     ) ?HitRecord
     {
         return switch (self) {
             inline else => |h| (
                 if (@hasDecl(@TypeOf(h), "hit")) h.hit(
                     r,
-                    ray_tmin,
-                    ray_tmax
+                    interval,
                 )
                 else null
             ),
@@ -664,12 +661,11 @@ pub const Hittable = union (enum) {
 
 pub const HittableList = std.ArrayList(Hittable);
 
-pub fn hit(
+pub fn hit_world(
     args: struct {
         world: HittableList,
         r: ray.Ray,
-        ray_tmin : BaseType = 0,
-        ray_tmax : BaseType = std.math.inf(BaseType),
+        interval: Interval,
     },
 ) ?HitRecord
 {
@@ -678,7 +674,7 @@ pub fn hit(
     for (args.world.items)
         |it|
     {
-        if (it.hit(args.r, args.ray_tmin, args.ray_tmax))
+        if (it.hit(args.r, args.interval))
             |hitrec|
         {
             if (maybe_first_hit == null or maybe_first_hit.?.t > hitrec.t)
@@ -697,7 +693,15 @@ const image_5 = struct {
         world: HittableList,
     ) vector.Color3f
     {
-        if (hit(.{ .world = world, .r = r }) )
+        if (
+            hit_world(
+                .{ 
+                    .world = world,
+                    .r = r,
+                    .interval = Interval.ZERO_TO_INF, 
+                }
+            ) 
+        )
             |hitrec|
         {
             return comath_wrapper.eval(
@@ -843,6 +847,7 @@ pub const Interval = struct {
     pub const EVERYTHING: Interval = .{ .start = -INF, .end = INF};
     pub const UNIT_RIGHT_INCLUSIVE: Interval = .{ .start = 0, .end = 1 };
     pub const UNIT_RIGHT_EXCLUSIVE: Interval = .{ .start = 0, .end = 0.99999 };
+    pub const ZERO_TO_INF: Interval = .{ .start = 0, .end = INF };
 
     pub fn size(
         self: @This(),
@@ -867,7 +872,8 @@ pub const Interval = struct {
                 self.start <= ord and self.end >= ord
             ),
             else => @compileError(
-                "cannot compare to things of type: " ++ @typeName(@TypeOf(ord))
+                "cannot compare to things of type: " 
+                ++ @typeName(@TypeOf(ord))
             ),
         };
     }
@@ -877,7 +883,20 @@ pub const Interval = struct {
         ord: BaseType,
     ) bool
     {
-        return self.start < ord and self.end > ord;
+        return switch (@typeInfo(@TypeOf(ord))) {
+            .@"struct" => (
+                self.start < ord.x and ord.x < self.end
+                and self.start < ord.y and ord.y < self.end
+                and self.start < ord.z and ord.z < self.end
+            ),
+            .@"float", .@"int", .comptime_float, .comptime_int => (
+                self.start < ord and ord < self.end
+            ),
+            else => @compileError(
+                "cannot compare to things of type: " 
+                ++ @typeName(@TypeOf(ord))
+            ),
+        };
     }
 
     pub fn clamp(
@@ -886,10 +905,7 @@ pub const Interval = struct {
     ) @TypeOf(ord)
     {
         return switch (@typeInfo(@TypeOf(ord))) {
-            .@"struct" => comath_wrapper.eval(
-            "ord.min(hi).max(low)",
-            .{ .low = self.start, .ord = ord, .hi = self.end },
-            ),
+            .@"struct" => ord.max(self.start).min(self.end),
             .@"float", .@"int", .comptime_float, .comptime_int => (
                 @min(@max(ord, self.end), self.start)
             ),
@@ -925,8 +941,36 @@ test "clamp"
             );
         }
     }
-
 }
+
+const Camera = struct {
+    /// focal length of the camera (thin lens) of 1.0
+    focal_length : BaseType = 1.0,
+    /// camera at the origin by default
+    center :vector.V3f = vector.Point3f.init(0),
+
+    const samples_per_pixel = 10;
+
+    // pub fn render(
+    //     world: HittableList,
+    // ) void
+    // {
+    //     initialize();
+    //
+    //     var j:usize = 0;
+    //
+    //     for (int j = 0; j < image_height; j++) {
+    //         for (int i = 0; i < image_width; i++) {
+    //             color pixel_color(0,0,0);
+    //             for (int sample = 0; sample < samples_per_pixel; sample++) {
+    //                 ray r = get_ray(i, j);
+    //                 pixel_color += ray_color(r, world);
+    //             }
+    //             write_color(std::cout, pixel_samples_scale * pixel_color);
+    //         }
+    //     }
+    // }
+};
 
 const image_6 = struct {
     pub fn ray_color(
@@ -934,7 +978,15 @@ const image_6 = struct {
         world: HittableList,
     ) vector.Color3f
     {
-        if (hit(.{ .world = world, .r = r }) )
+        if (
+            hit_world(
+                .{ 
+                    .world = world,
+                    .r = r,
+                    .interval = Interval.ZERO_TO_INF,
+                }
+            ) 
+        )
             |hitrec|
         {
             return comath_wrapper.eval(
