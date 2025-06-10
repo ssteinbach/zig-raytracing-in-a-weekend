@@ -136,9 +136,9 @@ pub fn lerp(
 test "method test"
 {
     const result = eval(
-        "v3(1,2,3).unit_vector().length()",
+        "v3(1,2,3).unit_vector().length() + 1",
         .{}
     );
 
-    try std.testing.expectApproxEqAbs(1, result, 0.0001);
+    try std.testing.expectApproxEqAbs(2, result, 0.0001);
 }
