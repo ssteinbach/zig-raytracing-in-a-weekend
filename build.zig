@@ -8,6 +8,10 @@ pub fn build(
     const optimize = b.standardOptimizeOption(.{});
 
     const test_step = b.step("test", "Run unit tests");
+    const check_step = b.step(
+        "check",
+        "check if it compiles"
+    );
 
     const lib_mod = b.createModule(
         .{
@@ -35,6 +39,8 @@ pub fn build(
             .root_module = lib_mod,
         }
     );
+
+    check_step.dependOn(&lib.step);
 
     const lib_unit_tests = b.addTest(
         .{
@@ -67,6 +73,8 @@ pub fn build(
                 .root_module = exe_mod,
             }
         );
+
+        check_step.dependOn(&exe.step);
 
         b.installArtifact(exe);
 
@@ -123,6 +131,7 @@ pub fn build(
                 .root_module = exe_mod,
             }
         );
+        check_step.dependOn(&exe.step);
 
         b.installArtifact(exe);
 
