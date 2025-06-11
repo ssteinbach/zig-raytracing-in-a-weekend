@@ -37,6 +37,18 @@ pub fn render(
     );
 }
 
+pub fn cleanup(
+) void
+{
+    for (render_functions.RENDERERS)
+        |rndr|
+    {
+        if (rndr._maybe_deinit)
+            |deinit|
+        {
+            deinit();
+        }
+    }
 }
 
 test "comath integration"
