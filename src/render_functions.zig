@@ -35,7 +35,7 @@ pub const CHECKPOINT_NAMES = [_][:0]const u8{
     "Image 3 (sphere hit)",
     "Image 4 (sphere color)",
     "Image 5 (sphere color w/ Hittable)",
-    "Image 6 (Diffuse Materials)",
+    "Image 6 (Antialiasing)",
 };
 
 pub const RENDERERS = [_]Renderer{
