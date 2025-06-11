@@ -52,7 +52,7 @@ fn maybe_decl(
     comptime T: type,
     comptime name: []const u8,
     comptime fn_type: type,
-) ?*fn_type
+) ?*const fn_type
 {
     return if (@hasDecl(T, name)) &@field(T, name) else null;
 }
@@ -1100,6 +1100,7 @@ const image_6 = struct {
     pub const State = struct {
         world: HittableSlice = undefined,
         camera: Camera = undefined,
+        allocator: std.mem.Allocator,
 
         pub fn init(
             allocator: std.mem.Allocator,
@@ -1137,6 +1138,7 @@ const image_6 = struct {
             return .{
                 .camera = camera,
                 .world =  world.toOwnedSlice() catch @panic("OOM"),
+                .allocator = allocator,
             };
         }
 
@@ -1146,6 +1148,13 @@ const image_6 = struct {
         ) void
         {
             self.camera.render(self.world, img);
+        }
+
+        pub fn deinit(
+            self: @This(),
+        ) void
+        {
+            self.allocator.free(self.world);
         }
     };
     var state: ?State = null;
@@ -1162,6 +1171,21 @@ const image_6 = struct {
         }
 
         state.?.render(img);
+    }
+
+    pub fn init(
+       allocator: std.mem.Allocator,
+       img: *raytrace.Image_rgba_u8,
+    ) void
+    {
+        state = State.init(allocator, img);
+    }
+
+    pub fn deinit(
+    ) void
+    {
+        state.?.deinit();
+        state = null;
     }
 };
 
