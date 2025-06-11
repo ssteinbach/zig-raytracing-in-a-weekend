@@ -30,7 +30,13 @@ pub fn render(
     current_renderer: usize,
 ) void
 {
-    return CHECKPOINTS[current_renderer](allocator, img, frame_number);
+    render_functions.RENDERERS[current_renderer]._render(
+        allocator,
+        img,
+        frame_number
+    );
+}
+
 }
 
 test "comath integration"
