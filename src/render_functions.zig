@@ -38,6 +38,54 @@ pub const CHECKPOINT_NAMES = [_][:0]const u8{
     "Image 6 (Diffuse Materials)",
 };
 
+pub const RENDERERS = [_]Renderer{
+    Renderer.init(struct{ const render = display_check;}),
+    Renderer.init(struct{ const render = image_1;}),
+    Renderer.init(image_2),
+    Renderer.init(image_3),
+    Renderer.init(image_4),
+    Renderer.init(image_5),
+    Renderer.init(image_6),
+};
+
+fn maybe_decl(
+    comptime T: type,
+    comptime name: []const u8,
+    comptime fn_type: type,
+) ?*fn_type
+{
+    return if (@hasDecl(T, name)) &@field(T, name) else null;
+}
+
+pub const Renderer = struct {
+    /// pointers
+    _maybe_init: ?*const INITFN_TYPE = null,
+    _render : *const fn (
+        allocator: std.mem.Allocator,
+        img: *raytrace.Image_rgba_u8,
+        _: usize,
+    ) void,
+    _maybe_deinit: ?*const CLEANUPFNTYPE = null,
+
+    /// types
+    pub const INITFN_TYPE = fn(
+       allocator: std.mem.Allocator,
+       img: *raytrace.Image_rgba_u8,
+   ) void;
+    pub const CLEANUPFNTYPE = fn() void;
+
+    pub fn init(
+        comptime T: type,
+    ) Renderer
+    {
+        return .{
+            ._maybe_init = maybe_decl(T, "init", INITFN_TYPE),
+            ._render = &@field(T, "render"),
+            ._maybe_deinit = maybe_decl(T, "deinit", CLEANUPFNTYPE),
+        };
+    }
+};
+
 pub fn display_check(
     _: std.mem.Allocator,
     img: *raytrace.Image_rgba_u8,
@@ -660,10 +708,11 @@ pub const Hittable = union (enum) {
 };
 
 pub const HittableList = std.ArrayList(Hittable);
+pub const HittableSlice = []Hittable;
 
 pub fn hit_world(
     args: struct {
-        world: HittableList,
+        world: HittableSlice,
         r: ray.Ray,
         interval: utils.Interval,
     },
@@ -671,7 +720,7 @@ pub fn hit_world(
 {
     var maybe_first_hit : ?HitRecord = null;
 
-    for (args.world.items)
+    for (args.world)
         |it|
     {
         if (it.hit(args.r, args.interval))
@@ -696,7 +745,7 @@ const image_5 = struct {
         if (
             hit_world(
                 .{ 
-                    .world = world,
+                    .world = world.items,
                     .r = r,
                     .interval = utils.Interval.ZERO_TO_INF, 
                 }
@@ -948,7 +997,7 @@ const image_6 = struct {
 
         pub fn ray_color(
             r: ray.Ray,
-            world: HittableList,
+            world: HittableSlice,
         ) vector.Color3f
         {
             if (
@@ -979,7 +1028,7 @@ const image_6 = struct {
 
         pub fn render(
             self: @This(),
-            world: HittableList,
+            world: HittableSlice,
             img: *raytrace.Image_rgba_u8,
         ) void
         {
@@ -1048,40 +1097,71 @@ const image_6 = struct {
         }
     };
 
+    pub const State = struct {
+        world: HittableSlice = undefined,
+        camera: Camera = undefined,
+
+        pub fn init(
+            allocator: std.mem.Allocator,
+            img: *raytrace.Image_rgba_u8,
+        ) State
+        {
+            // build the world
+            var world = HittableList.init(allocator);
+            defer world.deinit();
+
+            world.append(
+                Hittable.init(
+                    Sphere{
+                        .center_worldspace = vector.V3f.init_3(0,0,-1),
+                        .radius = 0.5,
+                    }
+                )
+            ) catch @panic("OOM!");
+            world.append(
+                Hittable.init(
+                    Sphere{
+                        .center_worldspace = vector.V3f.init_3(0, -100.5,-1),
+                        .radius = 100,
+                    }
+                )
+            ) catch @panic("OOM!");
+
+            const camera = Camera.init(
+                1.0,
+                // camera at the origin
+                vector.Point3f.init(0),
+                img,
+            );
+
+            return .{
+                .camera = camera,
+                .world =  world.toOwnedSlice() catch @panic("OOM"),
+            };
+        }
+
+        pub fn render(
+            self: @This(),
+            img: *raytrace.Image_rgba_u8,
+        ) void
+        {
+            self.camera.render(self.world, img);
+        }
+    };
+    var state: ?State = null;
+
     pub fn render(
         allocator: std.mem.Allocator,
         img: *raytrace.Image_rgba_u8,
         _: usize,
     ) void
     {
-        // build the world
-        var world = HittableList.init(allocator);
-        defer world.deinit();
+        if (state == null)
+        {
+            state = State.init(allocator, img);
+        }
 
-        world.append(
-            Hittable.init(
-                Sphere{
-                    .center_worldspace = vector.V3f.init_3(0,0,-1),
-                    .radius = 0.5,
-                }
-            )
-        ) catch @panic("OOM!");
-        world.append(
-            Hittable.init(
-                Sphere{
-                    .center_worldspace = vector.V3f.init_3(0, -100.5,-1),
-                    .radius = 100,
-                }
-            )
-        ) catch @panic("OOM!");
-
-        const camera = Camera.init(
-            1.0,
-            // camera at the origin
-            vector.Point3f.init(0),
-            img,
-        );
-
-        camera.render(world, img);
+        state.?.render(img);
     }
 };
+
