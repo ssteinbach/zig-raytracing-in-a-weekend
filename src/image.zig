@@ -26,7 +26,10 @@ pub fn Image(
         ) !@This()
         {
             return .{
-                .data = try allocator.alloc(data_type, width*height*channels),
+                .data = try allocator.alloc(
+                    data_type,
+                    width*height*channels
+                ),
                 .width = width,
                 .height = height,
                 .allocator = allocator,
