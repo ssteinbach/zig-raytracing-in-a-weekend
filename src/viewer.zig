@@ -27,6 +27,16 @@ const STATE = struct {
     var buffer : raytrace.Image_rgba_u8 = undefined;
     var journal : ?ziis.undo.Journal = null;
     var current_renderer: usize = raytrace.CHECKPOINTS.len - 1;
+
+    /// threading
+    var render_thread : std.Thread = undefined;
+    var render_thread_is_running= std.atomic.Value(bool).init(false);
+
+    // measuring
+    var fps : f64 = 0;
+    var mspf : f64 = 0;
+    var render_start_t : std.time.Instant = undefined;
+    var start_program_t : std.time.Instant = undefined;
 };
 
 const IS_WASM = builtin.target.cpu.arch.isWasm();
@@ -36,10 +46,14 @@ var gpa = (
     if (IS_WASM) null 
     else std.heap.GeneralPurposeAllocator(.{}){}
 );
-const allocator = (
+const backing_allocator = (
     if (IS_WASM) std.heap.c_allocator 
     else gpa.allocator()
 );
+var single_threaded_arena = std.heap.ArenaAllocator.init(
+    backing_allocator
+);
+const allocator = single_threaded_arena.allocator();
 
 /// like calling Imgui::Image but compatible with the texture stuff I'm doing
 fn imgui_image(
@@ -66,28 +80,24 @@ fn draw(
 
     STATE.frame_number = @intFromFloat(@abs(STATE.f));
 
-    const t_start = try std.time.Instant.now();
+    var render_status:[]const u8 = "RENDERING";
 
-    sg.updateImage(
-        STATE.tex,
-        init: {
-            var data = ziis.sokol.gfx.ImageData{};
+    if (STATE.render_thread_is_running.load(.monotonic) == false) 
+    {
+        STATE.render_thread.join();
 
-            raytrace.render(
-                allocator,
-                &STATE.buffer,
-                STATE.frame_number,
-                STATE.current_renderer,
-            );
+        var data = ziis.sokol.gfx.ImageData{};
 
-            data.subimage[0][0] = ziis.sokol.gfx.asRange(
-                STATE.buffer.data
-            );
-            break :init data;
-        },
-    );
+        data.subimage[0][0] = ziis.sokol.gfx.asRange(
+            STATE.buffer.data
+        );
 
-    var t_stop = try std.time.Instant.now();
+        sg.updateImage( STATE.tex, data);
+
+        render_status = "DONE";
+
+        STATE.render_thread = start_render_thread() catch @panic("can't start thread");
+    }
 
     zgui.setNextWindowPos(.{ .x = 0, .y = 0 });
     zgui.setNextWindowSize(
@@ -138,12 +148,15 @@ fn draw(
             }
         }
 
-        const elapsed_render : f64 = @floatFromInt(t_stop.since(t_start));
         zgui.text(
             "Application average {d:.3} ms/frame ({d:.3} FPS)",
-            .{ 
-                elapsed_render / std.time.ns_per_ms,
-                std.time.ns_per_s / (elapsed_render),
+            .{ STATE.mspf, STATE.fps, }
+        );
+        zgui.text(
+            "status: {s}: {d}",
+            .{
+                render_status,
+                (try std.time.Instant.now()).since(STATE.render_start_t) / std.time.ns_per_ms
             }
         );
 
@@ -297,6 +310,9 @@ fn draw(
 
 fn cleanup () void
 {
+    // make sure the last render finishes
+    STATE.render_thread.join();
+
     if (STATE.journal)
         |*definitely_journal|
     {
@@ -304,6 +320,9 @@ fn cleanup () void
     }
 
     STATE.buffer.deinit();
+
+    raytrace.cleanup();
+    single_threaded_arena.deinit();
 
     if (IS_WASM == false)
     {
@@ -313,6 +332,35 @@ fn cleanup () void
             std.debug.print("leak!", .{});
         }
     }
+}
+
+fn start_render_thread(
+) !std.Thread
+{
+    return try std.Thread.spawn(.{}, render, .{});
+}
+
+/// starts up the render thread
+fn render(
+) void
+{
+    STATE.render_thread_is_running.store(true, .monotonic);
+    const t_start = std.time.Instant.now() catch @panic("not supported");
+    STATE.render_start_t = t_start;
+
+    raytrace.render(
+        allocator,
+        &STATE.buffer,
+        STATE.frame_number,
+        STATE.current_renderer,
+    );
+
+    const t_end = std.time.Instant.now() catch @panic("not supported");
+    const dur = t_end.since(t_start);
+    STATE.mspf = @floatFromInt(dur / std.time.ns_per_ms);
+    STATE.fps =  std.time.ns_per_s / @as(f64, @floatFromInt(dur));
+
+    STATE.render_thread_is_running.store(false, .monotonic);
 }
 
 pub fn init(
@@ -334,6 +382,10 @@ pub fn init(
         STATE.TEX_DIM[0],
         STATE.TEX_DIM[1]
     ) catch @panic("couldn't make image");
+
+    STATE.start_program_t = std.time.Instant.now() catch @panic("yikes");
+
+    STATE.render_thread = start_render_thread() catch @panic("ouch!");
 }
 
 pub fn main(
