@@ -322,6 +322,7 @@ fn cleanup () void
     STATE.buffer.deinit();
 
     raytrace.cleanup();
+
     single_threaded_arena.deinit();
 
     if (IS_WASM == false)

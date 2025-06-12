@@ -15,15 +15,34 @@ pub fn rnd_num(
     comptime T: type,
 ) T 
 {
-    return rand.float(T);
+    return switch (@typeInfo(T)) {
+        .float, .comptime_float, => return rand.float(T),
+        .int, .comptime_int, => return rand.float(T),
+        .@"struct" => switch (T) {
+            vector.V3f => vector.V3f{
+                .x = rand.float(vector.V3f.BaseType),
+                .y = rand.float(vector.V3f.BaseType),
+                .z = rand.float(vector.V3f.BaseType),
+            },
+            else => @compileError(
+                    "Can only generate random ints, floats, and V3f, not: " 
+                    ++ @typeName(T)
+            ),
+        },
+        else => @compileError(
+            "Can only generate random ints, floats, and V3f, not: " 
+            ++ @typeName(T)
+        ),
+    };
 }
 
 pub fn rnd_num_range(
+    comptime T: type,
     low_inclusive: f32,
     high_exclusive: f32,
-) void 
+) T
 {
-    return comath_wrapper.lerp(rnd_num(), low_inclusive, high_exclusive);
+    return comath_wrapper.lerp(rnd_num(T), low_inclusive, high_exclusive);
 }
 
 pub const Interval = struct {
