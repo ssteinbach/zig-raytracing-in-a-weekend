@@ -121,3 +121,30 @@ pub const Interval = struct {
         };
     }
 };
+
+pub fn random_unit_vector(
+) vector.V3f
+{
+    while (true)
+    {
+        const p = rnd_num(vector.V3f);
+        const len_sq = p.length_squared();
+
+        if (1e-160 < len_sq and len_sq <= 1.0)
+        {
+            return p.div(std.math.sqrt(len_sq));
+        }
+    }
+}
+
+pub fn random_on_hemisphere(
+    normal: vector.V3f
+) vector.V3f
+{
+    const on_unit_sphere = random_unit_vector();
+
+    return (
+        if (on_unit_sphere.dot(normal) > 0.0) on_unit_sphere 
+        else on_unit_sphere.neg()
+    );
+}
