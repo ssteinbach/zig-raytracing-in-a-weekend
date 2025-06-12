@@ -1292,10 +1292,11 @@ const image_7 = struct {
             )
                 |hitrec|
             {
-                return comath_wrapper.eval(
-                    "(n + 1) * 0.5",
-                    .{ .n = hitrec.normal },
-                );
+                const dir = utils.random_on_hemisphere(hitrec.normal);
+                return ray_color(
+                    .{ .origin = hitrec.p, .dir = dir},
+                    world,
+                ).mul(0.5);
             }
 
             const a = 0.5 * (r.dir.unit_vector().y + 1.0);
