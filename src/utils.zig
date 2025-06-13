@@ -132,13 +132,14 @@ pub fn random_unit_vector(
 
         if (1e-160 < len_sq and len_sq <= 1.0)
         {
+            // normalize the length
             return p.div(std.math.sqrt(len_sq));
         }
     }
 }
 
 pub fn random_on_hemisphere(
-    normal: vector.V3f
+    normal: vector.V3f,
 ) vector.V3f
 {
     const on_unit_sphere = random_unit_vector();
