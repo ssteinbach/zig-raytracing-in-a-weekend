@@ -1461,7 +1461,11 @@ const image_7 = struct {
     pub fn deinit(
     ) void
     {
-        state.?.deinit();
+        if (state)
+            |definitely_state|
+        {
+            definitely_state.deinit();
+        }
         state = null;
     }
 };
@@ -1751,7 +1755,11 @@ const image_8 = struct {
     pub fn deinit(
     ) void
     {
-        state.?.deinit();
+        if (state)
+            |definitely_state|
+        {
+            definitely_state.deinit();
+        }
         state = null;
     }
 };
@@ -2041,7 +2049,11 @@ const image_9 = struct {
     pub fn deinit(
     ) void
     {
-        state.?.deinit();
+        if (state)
+            |definitely_state|
+        {
+            definitely_state.deinit();
+        }
         state = null;
     }
 };
@@ -2331,7 +2343,11 @@ const image_10 = struct {
     pub fn deinit(
     ) void
     {
-        state.?.deinit();
+        if (state)
+            |definitely_state|
+        {
+            definitely_state.deinit();
+        }
         state = null;
     }
 };
