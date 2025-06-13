@@ -7,8 +7,7 @@ const vector = @import("vector.zig");
 const comath_wrapper = @import("comath_wrapper.zig");
 
 const render_functions = @import("render_functions.zig");
-pub const CHECKPOINTS = render_functions.CHECKPOINTS;
-pub const CHECKPOINT_NAMES = render_functions.CHECKPOINT_NAMES;
+pub const RENDERERS = render_functions.RENDERERS;
 
 test
 {

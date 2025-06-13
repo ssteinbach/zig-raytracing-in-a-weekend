@@ -26,7 +26,7 @@ const STATE = struct {
     var frame_number: usize = 0;
     var buffer : raytrace.Image_rgba_u8 = undefined;
     var journal : ?ziis.undo.Journal = null;
-    var current_renderer: usize = raytrace.CHECKPOINTS.len - 1;
+    var current_renderer: usize = raytrace.RENDERERS.len - 1;
 
     /// threading
     var render_thread : std.Thread = undefined;
@@ -81,6 +81,7 @@ fn draw(
     STATE.frame_number = @intFromFloat(@abs(STATE.f));
 
     var render_status:[]const u8 = "RENDERING";
+    var buffer : [128:0]u8 = undefined;
 
     if (STATE.render_thread_is_running.load(.monotonic) == false) 
     {
@@ -125,18 +126,34 @@ fn draw(
     {
         defer zgui.end();
 
-        const preview = raytrace.CHECKPOINT_NAMES[STATE.current_renderer];
+        const preview = raytrace.RENDERERS[STATE.current_renderer].desc;
 
-        if (zgui.beginCombo("Current Renderer", .{.preview_value = preview}))
+        if (
+            zgui.beginCombo(
+                "Current Renderer",
+                .{.preview_value = preview}
+            )
+        )
         {
             defer zgui.endCombo();
 
-            for (raytrace.CHECKPOINT_NAMES, 0..)
+            for (raytrace.RENDERERS, 0..)
                 |it, ind|
             {
                 const is_selected = ind == STATE.current_renderer;
 
-                if (zgui.selectable(it, .{ .selected = is_selected } ))
+                const lbl = try std.fmt.bufPrintZ(
+                    &buffer,
+                    "{d}: {s}",
+                    .{ ind, it.desc }
+                );
+
+                if (
+                    zgui.selectable(
+                         lbl,
+                        .{ .selected = is_selected } 
+                    )
+                )
                 {
                     STATE.current_renderer = ind;
                 }

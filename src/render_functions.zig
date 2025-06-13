@@ -17,47 +17,18 @@ pub const render_fn = *const fn(
     usize,
 ) void;
 
-/// fun way of cataloging the history of the renders that this project can make
-pub const CHECKPOINTS:[]const render_fn = &[_]render_fn{
-    display_check,
-    image_1,
-    image_2.render,
-    image_3.render,
-    image_4.render,
-    image_5.render,
-    image_6.render,
-    image_7.render,
-    image_8.render,
-    image_9.render,
-    image_10.render,
-};
-
-pub const CHECKPOINT_NAMES = [_][:0]const u8{
-    "coordinate check",
-    "Image 1 (color over image)",
-    "Image 2 (ray.y = color)",
-    "Image 3 (sphere hit)",
-    "Image 4 (sphere color)",
-    "Image 5 (sphere color w/ Hittable)",
-    "Image 6 (Antialiasing)",
-    "Image 7 (Diffuse Sampling)",
-    "Image 8 (Limited bounces)",
-    "Image 9 (No Shadow Acne)",
-    "Image 10 (Correct Lambertian response)",
-};
-
 pub const RENDERERS = [_]Renderer{
-    Renderer.init(struct{ const render = display_check;}),
-    Renderer.init(struct{ const render = image_1;}),
-    Renderer.init(image_2),
-    Renderer.init(image_3),
-    Renderer.init(image_4),
-    Renderer.init(image_5),
-    Renderer.init(image_6),
-    Renderer.init(image_7),
-    Renderer.init(image_8),
-    Renderer.init(image_9),
-    Renderer.init(image_10),
+    Renderer.init(struct{ const render = display_check;}, "coordinate check"),
+    Renderer.init(struct{ const render = image_1;}, "color over image"),
+    Renderer.init(image_2, "ray.y = color"),
+    Renderer.init(image_3, "sphere hit"),
+    Renderer.init(image_4, "sphere color"),
+    Renderer.init(image_5, "sphere color w/ Hittable"),
+    Renderer.init(image_6, "Antialiasing"),
+    Renderer.init(image_7, "Diffuse Sampling"),
+    Renderer.init(image_8, "Limited bounces"),
+    Renderer.init(image_9, "No Shadow Acne"),
+    Renderer.init(image_10, "Correct Lambertian response"),
 };
 
 fn maybe_decl(
@@ -78,6 +49,8 @@ pub const Renderer = struct {
         _: usize,
     ) void,
     _maybe_deinit: ?*const CLEANUPFNTYPE = null,
+    /// description string
+    desc: [:0]const u8,
 
     /// types
     pub const INITFN_TYPE = fn(
@@ -88,9 +61,11 @@ pub const Renderer = struct {
 
     pub fn init(
         comptime T: type,
+        comptime desc: [:0]const u8,
     ) Renderer
     {
         return .{
+            .desc = desc,
             ._maybe_init = maybe_decl(T, "init", INITFN_TYPE),
             ._render = &@field(T, "render"),
             ._maybe_deinit = maybe_decl(T, "deinit", CLEANUPFNTYPE),
