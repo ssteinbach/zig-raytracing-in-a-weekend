@@ -1,4 +1,5 @@
 const std = @import("std");
+
 const render_functions = @import("../render_functions.zig");
 const BaseType = render_functions.BaseType;
 
@@ -8,6 +9,7 @@ const vector = @import("../vector.zig");
 const comath_wrapper = @import("../comath_wrapper.zig");
 const utils = @import("../utils.zig");
 
+/// public renderer for this image
 pub const RNDR = struct {
     const Camera = struct {
         /// focal length of the camera (thin lens) of 1.0
@@ -293,7 +295,12 @@ pub const RNDR = struct {
     pub fn deinit(
     ) void
     {
-        state.?.deinit();
+        if (state)
+            |definitely_state|
+        {
+            definitely_state.deinit();
+        }
+
         state = null;
     }
 };
