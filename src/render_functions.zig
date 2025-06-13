@@ -17,6 +17,8 @@ pub const render_fn = *const fn(
     usize,
 ) void;
 
+/// list of all the renderers in the project.  Generally, each one corresponds
+/// to a different image in the "Raytracing in a Weekend" book
 pub const RENDERERS = [_]Renderer{
     Renderer.init(struct{ const render = display_check;}, "coordinate check"),
     Renderer.init(struct{ const render = image_1;}, "color over image"),
