@@ -54,6 +54,7 @@ pub const Interval = struct {
     pub const UNIT_RIGHT_INCLUSIVE: Interval = .{ .start = 0, .end = 1 };
     pub const UNIT_RIGHT_EXCLUSIVE: Interval = .{ .start = 0, .end = 0.99999 };
     pub const ZERO_TO_INF: Interval = .{ .start = 0, .end = INF };
+    pub const EPS_TO_INF: Interval = .{ .start = 0.001, .end = INF };
 
     pub fn size(
         self: @This(),
