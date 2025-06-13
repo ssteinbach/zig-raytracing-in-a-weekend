@@ -115,12 +115,20 @@ pub const RNDR = struct {
             )
                 |hitrec|
             {
+                // wedging to make the gamut image
+                const scale:BaseType = (
+                    if (hitrec.p.x < -0.3) 0.1
+                    else if (hitrec.p.x < -0.1) 0.3
+                    else if (hitrec.p.x < 0.1) 0.5
+                    else if (hitrec.p.x < 0.3) 0.7
+                    else 0.9
+                );
                 const dir = hitrec.normal.add(utils.random_unit_vector());
                 return ray_color(
                     .{ .origin = hitrec.p, .dir = dir},
                     depth - 1,
                     world,
-                ).mul(0.5);
+                ).mul(scale);
             }
 
             const a = 0.5 * (r.dir.unit_vector().y + 1.0);
