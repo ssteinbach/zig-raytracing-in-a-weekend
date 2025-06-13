@@ -172,7 +172,7 @@ pub const RNDR = struct {
                             )
                         );
                     }
-                    img.write_pixel(
+                    img.write_pixel_corrected(
                         i,
                         j,
                         pixel_color.mul(pixel_sample_scale)

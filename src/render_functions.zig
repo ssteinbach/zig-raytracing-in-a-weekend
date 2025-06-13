@@ -32,7 +32,7 @@ pub const RENDERERS = [_]Renderer{
     Renderer.init(image_9, "No Shadow Acne"),
     Renderer.init(image_10, "Correct Lambertian response"),
     Renderer.init(@import("renderers/image_11.zig").RNDR, "Gamut at the moment"),
-    // Renderer.init(@import("renderers/image_12.zig").RNDR, "Gamma Corrected Gamut"),
+    Renderer.init(@import("renderers/image_12.zig").RNDR, "Gamma Corrected Gamut"),
     // Renderer.init(@import("renderers/image_13.zig").RNDR, "Shiny Metal"),
     // Renderer.init(@import("renderers/image_14.zig").RNDR, "Fuzzed Metal"),
     // Renderer.init(@import("renderers/image_15.zig").RNDR, "Glass First"),

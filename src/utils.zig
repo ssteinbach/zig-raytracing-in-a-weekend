@@ -150,3 +150,26 @@ pub fn random_on_hemisphere(
         else on_unit_sphere.neg()
     );
 }
+
+pub fn linear_to_gamma(
+    linear_component: anytype,
+) @TypeOf(linear_component)
+{
+    return switch (@typeInfo(@TypeOf(linear_component))) {
+        .int, .comptime_int, .float, .comptime_float => (
+            if (linear_component > 0) std.math.sqrt(linear_component)
+            else 0
+        ),
+        .@"struct" => (
+            vector.V3f{
+                .x = if (linear_component.x > 0) std.math.sqrt(linear_component.x) else 0,
+                .y = if (linear_component.y > 0) std.math.sqrt(linear_component.y) else 0,
+                .z = if (linear_component.z > 0) std.math.sqrt(linear_component.z) else 0,
+            }
+        ),
+        else => @compileError(
+            "Can only take the linear component of int, float, and Vector, not:"
+            ++ @typeName(@TypeOf(linear_component))
+        ),
+    };
+}

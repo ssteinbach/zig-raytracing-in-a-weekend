@@ -352,6 +352,23 @@ pub fn Vec3Of(
             };
         }
 
+        pub inline fn gt(
+            self: @This(),
+            rhs: anytype,
+        ) bool
+        {
+            return switch (@TypeOf(rhs)) {
+                VecType => (
+                    self.x > rhs.x
+                    and self.y > rhs.y
+                    and self.z > rhs.z
+                ),
+                else => {
+                    return self.eql(VecType.init(rhs));
+                },
+            };
+        }
+
         /// if the V3f is infinite
         pub inline fn is_inf(
             self: @This(),

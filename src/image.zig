@@ -1,6 +1,6 @@
 const std = @import("std");
 const vector = @import("vector.zig");
-const util = @import("utils.zig");
+const utils = @import("utils.zig");
 
 pub fn Image(
     channels:usize,
@@ -68,7 +68,33 @@ pub fn Image(
 
             // scale and convert to output pixel foormat
             // from [0, 1) to [0, 255)
-            const pixel_color = util.Interval.UNIT_RIGHT_EXCLUSIVE.clamp(
+            const pixel_color = utils.Interval.UNIT_RIGHT_EXCLUSIVE.clamp(
+                c
+            ) .mul(256).as(u8);
+
+            px[0] = pixel_color.x;
+            px[1] = pixel_color.y;
+            px[2] = pixel_color.z;
+            px[3] = 255;
+        }
+
+        pub fn write_pixel_corrected(
+            self: *@This(),
+            /// pixel coordinate
+            i: usize, 
+            /// pixel coordinate
+            j: usize,
+            /// c is assumed to be [0, 1)
+            c_raw: vector.Color3f,
+        ) void
+        {
+            var px = self.pixel(i, j);
+
+            const c = utils.linear_to_gamma(c_raw);
+
+            // scale and convert to output pixel foormat
+            // from [0, 1) to [0, 255)
+            const pixel_color = utils.Interval.UNIT_RIGHT_EXCLUSIVE.clamp(
                 c
             ) .mul(256).as(u8);
 
