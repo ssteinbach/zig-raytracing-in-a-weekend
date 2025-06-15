@@ -3,9 +3,11 @@
 const std = @import("std");
 const raytrace = @import("root.zig");
 const ray = @import("ray.zig");
+const ray_hit = @import("ray_hit.zig");
 const vector = @import("vector.zig");
 const comath_wrapper = @import("comath_wrapper.zig");
 const utils = @import("utils.zig");
+const geometry = @import("geometry.zig");
 
 pub const BaseType = vector.V3f.BaseType;
 pub const INF = std.math.inf(BaseType);
@@ -23,9 +25,9 @@ pub const RENDERERS = [_]Renderer{
     Renderer.init(struct{ const render = display_check;}, "coordinate check"),
     Renderer.init(struct{ const render = image_1;}, "color over image"),
     Renderer.init(image_2, "ray.y = color"),
-    Renderer.init(image_3, "sphere hit"),
-    Renderer.init(image_4, "sphere color"),
-    Renderer.init(image_5, "sphere color w/ Hittable"),
+    Renderer.init(image_3, "geometry.sphere hit"),
+    Renderer.init(image_4, "geometry.sphere color"),
+    Renderer.init(image_5, "geometry.sphere color w/ ray_hit.Hittable"),
     Renderer.init(image_6, "Antialiasing"),
     Renderer.init(image_7, "Diffuse Sampling"),
     Renderer.init(image_8, "Limited bounces"),
@@ -166,7 +168,7 @@ pub fn image_1(
 
 const image_2 = struct {
     pub fn hit_sphere(
-        s: Sphere,
+        s: geometry.Sphere,
         r: ray.Ray
     ) bool
     {
@@ -286,69 +288,6 @@ const image_2 = struct {
                 pixel[3] = 255;
             }
         }
-    }
-};
-
-pub const Sphere = struct {
-    center_worldspace : vector.Point3f,
-    radius: vector.V3f.BaseType,
-
-    pub fn format(
-        self: @This(),
-        comptime _: []const u8,
-        _: std.fmt.FormatOptions,
-        writer: anytype,
-    ) !void 
-    {
-        try writer.print(
-            "Sphere{{ {s}, {d} }}",
-            .{
-                self.center_worldspace,
-                self.radius,
-            },
-        );
-    }
-
-    pub fn hit(
-        self: @This(),
-        r: ray.Ray,
-        interval: utils.Interval,
-    ) ?HitRecord
-    {
-        const oc = self.center_worldspace.sub(r.origin);
-        const a = r.dir.length_squared();
-        const h = r.dir.dot(oc);
-        const c = oc.length_squared() - self.radius*self.radius;
-        const discriminant = h*h - a*c;
-
-        if (discriminant < 0)
-        {
-            return null;
-        }
-
-        const sqrtd = std.math.sqrt(discriminant);
-
-        // Find the nearest root that lies in the acceptable range.
-        var root = (h - sqrtd) / a;
-        if (interval.surrounds(root) == false) 
-        {
-            root = (h + sqrtd) / a;
-            if (interval.surrounds(root) == false)
-            {
-                return null;
-            }
-        }
-
-        const p = r.at(root);
-        var result : HitRecord = .{
-            .t = root,
-            .p = p,
-        };
-
-        const outward_normal = p.sub(self.center_worldspace).div(self.radius);
-        result.set_face_normal(r, outward_normal);
-        
-        return result;
     }
 };
 
@@ -473,7 +412,7 @@ const image_3 = struct {
 };
 
 pub fn hit_sphere(
-    s: Sphere,
+    s: geometry.Sphere,
     r: ray.Ray,
 ) ?BaseType
 {
@@ -623,96 +562,15 @@ const image_4 = struct {
     }
 };
 
-/// represents a hit along a ray in the scene
-const HitRecord = struct {
-    /// hit point
-    p: vector.Point3f,
-    /// unit normal at the hit location
-    normal: vector.V3f = .{},
-    /// distance along the ray the hit occured
-    t: BaseType,
-
-    pub fn set_face_normal(
-        self: *@This(),
-        r: ray.Ray,
-        outward_normal: vector.V3f,
-    ) void
-    {
-        const front_face = r.dir.dot(outward_normal) < 0;
-        self.*.normal = if (front_face) outward_normal else outward_normal.neg();
-    }
-};
-
-pub const Hittable = union (enum) {
-    sphere : Sphere,
-
-    pub fn init(
-        thing: anytype,
-    ) Hittable
-    {
-        return switch (@TypeOf(thing)) {
-            Sphere => .{ .sphere = thing },
-            else => @compileError(
-                "Type " ++ @typeName(@TypeOf(thing)) ++ " is not hittable."
-                ),
-                
-        };
-    }
-
-    pub fn hit (
-        self: @This(),
-        r: ray.Ray,
-        interval: utils.Interval,
-    ) ?HitRecord
-    {
-        return switch (self) {
-            inline else => |h| (
-                if (@hasDecl(@TypeOf(h), "hit")) h.hit(
-                    r,
-                    interval,
-                )
-                else null
-            ),
-        };
-    }
-
-    pub fn format(
-        self: @This(),
-        comptime fmt: []const u8,
-        options: std.fmt.FormatOptions,
-        writer: anytype,
-    ) !void
-    {
-        return switch (self) {
-            inline else => |h| (
-                if (@hasDecl(@TypeOf(h), "format")) h.format(
-                    fmt,
-                    options,
-                    writer
-                )
-                else {
-                    std.debug.print(
-                        "type: {s} has no format \n",
-                        .{ @typeName(@TypeOf(h))}
-                    );
-                }
-            ),
-        };
-    }
-};
-
-pub const HittableList = std.ArrayList(Hittable);
-pub const HittableSlice = []Hittable;
-
 pub fn hit_world(
     args: struct {
-        world: HittableSlice,
+        world: ray_hit.HittableSlice,
         r: ray.Ray,
         interval: utils.Interval,
     },
-) ?HitRecord
+) ?ray_hit.HitRecord
 {
-    var maybe_first_hit : ?HitRecord = null;
+    var maybe_first_hit : ?ray_hit.HitRecord = null;
 
     for (args.world)
         |it|
@@ -733,7 +591,7 @@ pub fn hit_world(
 const image_5 = struct {
     pub fn ray_color(
         r: ray.Ray,
-        world: HittableList,
+        world: ray_hit.HittableList,
     ) vector.Color3f
     {
         if (
@@ -770,20 +628,20 @@ const image_5 = struct {
     ) void
     {
         // build the world
-        var world = HittableList.init(allocator);
+        var world = ray_hit.HittableList.init(allocator);
         defer world.deinit();
 
         world.append(
-            Hittable.init(
-                Sphere{
+            ray_hit.Hittable.init(
+                geometry.Sphere{
                     .center_worldspace = vector.V3f.init_3(0,0,-1),
                     .radius = 0.5,
                 }
             )
         ) catch @panic("OOM!");
         world.append(
-            Hittable.init(
-                Sphere{
+            ray_hit.Hittable.init(
+                geometry.Sphere{
                     .center_worldspace = vector.V3f.init_3(0, -100.5,-1),
                     .radius = 100,
                 }
@@ -991,7 +849,7 @@ const image_6 = struct {
 
         pub fn ray_color(
             r: ray.Ray,
-            world: HittableSlice,
+            world: ray_hit.HittableSlice,
         ) vector.Color3f
         {
             if (
@@ -1022,7 +880,7 @@ const image_6 = struct {
 
         pub fn render(
             self: @This(),
-            world: HittableSlice,
+            world: ray_hit.HittableSlice,
             img: *raytrace.Image_rgba_u8,
         ) void
         {
@@ -1092,7 +950,7 @@ const image_6 = struct {
     };
 
     pub const State = struct {
-        world: HittableSlice = undefined,
+        world: ray_hit.HittableSlice = undefined,
         camera: Camera = undefined,
         allocator: std.mem.Allocator,
 
@@ -1102,20 +960,20 @@ const image_6 = struct {
         ) State
         {
             // build the world
-            var world = HittableList.init(allocator);
+            var world = ray_hit.HittableList.init(allocator);
             defer world.deinit();
 
             world.append(
-                Hittable.init(
-                    Sphere{
+                ray_hit.Hittable.init(
+                    geometry.Sphere{
                         .center_worldspace = vector.V3f.init_3(0,0,-1),
                         .radius = 0.5,
                     }
                 )
             ) catch @panic("OOM!");
             world.append(
-                Hittable.init(
-                    Sphere{
+                ray_hit.Hittable.init(
+                    geometry.Sphere{
                         .center_worldspace = vector.V3f.init_3(0, -100.5,-1),
                         .radius = 100,
                     }
@@ -1269,7 +1127,7 @@ const image_7 = struct {
 
         pub fn ray_color(
             r: ray.Ray,
-            world: HittableSlice,
+            world: ray_hit.HittableSlice,
         ) vector.Color3f
         {
             if (
@@ -1301,7 +1159,7 @@ const image_7 = struct {
 
         pub fn render(
             self: @This(),
-            world: HittableSlice,
+            world: ray_hit.HittableSlice,
             img: *raytrace.Image_rgba_u8,
         ) void
         {
@@ -1375,7 +1233,7 @@ const image_7 = struct {
     };
 
     pub const State = struct {
-        world: HittableSlice = undefined,
+        world: ray_hit.HittableSlice = undefined,
         camera: Camera = undefined,
         allocator: std.mem.Allocator,
 
@@ -1385,20 +1243,20 @@ const image_7 = struct {
         ) State
         {
             // build the world
-            var world = HittableList.init(allocator);
+            var world = ray_hit.HittableList.init(allocator);
             defer world.deinit();
 
             world.append(
-                Hittable.init(
-                    Sphere{
+                ray_hit.Hittable.init(
+                    geometry.Sphere{
                         .center_worldspace = vector.V3f.init_3(0,0,-1),
                         .radius = 0.5,
                     }
                 )
             ) catch @panic("OOM!");
             world.append(
-                Hittable.init(
-                    Sphere{
+                ray_hit.Hittable.init(
+                    geometry.Sphere{
                         .center_worldspace = vector.V3f.init_3(0, -100.5,-1),
                         .radius = 100,
                     }
@@ -1556,7 +1414,7 @@ const image_8 = struct {
         pub fn ray_color(
             r: ray.Ray,
             depth: i16,
-            world: HittableSlice,
+            world: ray_hit.HittableSlice,
         ) vector.Color3f
         {
             if (depth <= 0)
@@ -1594,7 +1452,7 @@ const image_8 = struct {
 
         pub fn render(
             self: @This(),
-            world: HittableSlice,
+            world: ray_hit.HittableSlice,
             img: *raytrace.Image_rgba_u8,
         ) void
         {
@@ -1669,7 +1527,7 @@ const image_8 = struct {
     };
 
     pub const State = struct {
-        world: HittableSlice = undefined,
+        world: ray_hit.HittableSlice = undefined,
         camera: Camera = undefined,
         allocator: std.mem.Allocator,
 
@@ -1679,20 +1537,20 @@ const image_8 = struct {
         ) State
         {
             // build the world
-            var world = HittableList.init(allocator);
+            var world = ray_hit.HittableList.init(allocator);
             defer world.deinit();
 
             world.append(
-                Hittable.init(
-                    Sphere{
+                ray_hit.Hittable.init(
+                    geometry.Sphere{
                         .center_worldspace = vector.V3f.init_3(0,0,-1),
                         .radius = 0.5,
                     }
                 )
             ) catch @panic("OOM!");
             world.append(
-                Hittable.init(
-                    Sphere{
+                ray_hit.Hittable.init(
+                    geometry.Sphere{
                         .center_worldspace = vector.V3f.init_3(0, -100.5,-1),
                         .radius = 100,
                     }
@@ -1850,7 +1708,7 @@ const image_9 = struct {
         pub fn ray_color(
             r: ray.Ray,
             depth: i16,
-            world: HittableSlice,
+            world: ray_hit.HittableSlice,
         ) vector.Color3f
         {
             if (depth <= 0)
@@ -1888,7 +1746,7 @@ const image_9 = struct {
 
         pub fn render(
             self: @This(),
-            world: HittableSlice,
+            world: ray_hit.HittableSlice,
             img: *raytrace.Image_rgba_u8,
         ) void
         {
@@ -1963,7 +1821,7 @@ const image_9 = struct {
     };
 
     pub const State = struct {
-        world: HittableSlice = undefined,
+        world: ray_hit.HittableSlice = undefined,
         camera: Camera = undefined,
         allocator: std.mem.Allocator,
 
@@ -1973,20 +1831,20 @@ const image_9 = struct {
         ) State
         {
             // build the world
-            var world = HittableList.init(allocator);
+            var world = ray_hit.HittableList.init(allocator);
             defer world.deinit();
 
             world.append(
-                Hittable.init(
-                    Sphere{
+                ray_hit.Hittable.init(
+                    geometry.Sphere{
                         .center_worldspace = vector.V3f.init_3(0,0,-1),
                         .radius = 0.5,
                     }
                 )
             ) catch @panic("OOM!");
             world.append(
-                Hittable.init(
-                    Sphere{
+                ray_hit.Hittable.init(
+                    geometry.Sphere{
                         .center_worldspace = vector.V3f.init_3(0, -100.5,-1),
                         .radius = 100,
                     }
@@ -2144,7 +2002,7 @@ const image_10 = struct {
         pub fn ray_color(
             r: ray.Ray,
             depth: i16,
-            world: HittableSlice,
+            world: ray_hit.HittableSlice,
         ) vector.Color3f
         {
             if (depth <= 0)
@@ -2182,7 +2040,7 @@ const image_10 = struct {
 
         pub fn render(
             self: @This(),
-            world: HittableSlice,
+            world: ray_hit.HittableSlice,
             img: *raytrace.Image_rgba_u8,
         ) void
         {
@@ -2257,7 +2115,7 @@ const image_10 = struct {
     };
 
     pub const State = struct {
-        world: HittableSlice = undefined,
+        world: ray_hit.HittableSlice = undefined,
         camera: Camera = undefined,
         allocator: std.mem.Allocator,
 
@@ -2267,20 +2125,20 @@ const image_10 = struct {
         ) State
         {
             // build the world
-            var world = HittableList.init(allocator);
+            var world = ray_hit.HittableList.init(allocator);
             defer world.deinit();
 
             world.append(
-                Hittable.init(
-                    Sphere{
+                ray_hit.Hittable.init(
+                    geometry.Sphere{
                         .center_worldspace = vector.V3f.init_3(0,0,-1),
                         .radius = 0.5,
                     }
                 )
             ) catch @panic("OOM!");
             world.append(
-                Hittable.init(
-                    Sphere{
+                ray_hit.Hittable.init(
+                    geometry.Sphere{
                         .center_worldspace = vector.V3f.init_3(0, -100.5,-1),
                         .radius = 100,
                     }

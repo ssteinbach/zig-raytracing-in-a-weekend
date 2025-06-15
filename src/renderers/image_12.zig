@@ -1,13 +1,15 @@
 const std = @import("std");
 
 const render_functions = @import("../render_functions.zig");
-const BaseType = render_functions.BaseType;
 
 const raytrace = @import("../root.zig");
 const ray = @import("../ray.zig");
+const ray_hit = @import("../ray_hit.zig");
 const vector = @import("../vector.zig");
+const BaseType = vector.V3f.BaseType;
 const comath_wrapper = @import("../comath_wrapper.zig");
 const utils = @import("../utils.zig");
+const geometry = @import("../geometry.zig");
 
 /// public renderer for this image
 pub const RNDR = struct {
@@ -93,10 +95,11 @@ pub const RNDR = struct {
             };
         }
 
+        /// determine the color of a given ray
         pub fn ray_color(
             r: ray.Ray,
             depth: i16,
-            world: render_functions.HittableSlice,
+            world: ray_hit.HittableSlice,
         ) vector.Color3f
         {
             if (depth <= 0)
@@ -139,9 +142,11 @@ pub const RNDR = struct {
             );
         }
 
+        /// given an image to write to and a world of objects to render,
+        /// produce an image
         pub fn render(
             self: @This(),
-            world: render_functions.HittableSlice,
+            world: ray_hit.HittableSlice,
             img: *raytrace.Image_rgba_u8,
         ) void
         {
@@ -183,6 +188,7 @@ pub const RNDR = struct {
 
         }
 
+        /// build a ray that leaves the given pixel
         fn get_ray(
             self: @This(),
             i: BaseType,
@@ -220,7 +226,7 @@ pub const RNDR = struct {
     };
 
     pub const State = struct {
-        world: render_functions.HittableSlice = undefined,
+        world: ray_hit.HittableSlice = undefined,
         camera: Camera = undefined,
         allocator: std.mem.Allocator,
 
@@ -230,20 +236,20 @@ pub const RNDR = struct {
         ) State
         {
             // build the world
-            var world = render_functions.HittableList.init(allocator);
+            var world = ray_hit.HittableList.init(allocator);
             defer world.deinit();
 
             world.append(
-                render_functions.Hittable.init(
-                    render_functions.Sphere{
+                ray_hit.Hittable.init(
+                    geometry.Sphere{
                         .center_worldspace = vector.V3f.init_3(0,0,-1),
                         .radius = 0.5,
                     }
                 )
             ) catch @panic("OOM!");
             world.append(
-                render_functions.Hittable.init(
-                    render_functions.Sphere{
+                ray_hit.Hittable.init(
+                    geometry.Sphere{
                         .center_worldspace = vector.V3f.init_3(0, -100.5,-1),
                         .radius = 100,
                     }

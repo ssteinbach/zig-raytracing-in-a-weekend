@@ -1,0 +1,69 @@
+const std = @import("std");
+
+const vector = @import("vector.zig");
+const ray = @import("ray.zig");
+const utils = @import("utils.zig");
+const ray_hit = @import("ray_hit.zig");
+
+pub const Sphere = struct {
+    center_worldspace : vector.Point3f,
+    radius: vector.V3f.BaseType,
+
+    pub fn format(
+        self: @This(),
+        comptime _: []const u8,
+        _: std.fmt.FormatOptions,
+        writer: anytype,
+    ) !void 
+    {
+        try writer.print(
+            "Sphere{{ {s}, {d} }}",
+            .{
+                self.center_worldspace,
+                self.radius,
+            },
+        );
+    }
+
+    pub fn hit(
+        self: @This(),
+        r: ray.Ray,
+        interval: utils.Interval,
+    ) ?ray_hit.HitRecord
+    {
+        const oc = self.center_worldspace.sub(r.origin);
+        const a = r.dir.length_squared();
+        const h = r.dir.dot(oc);
+        const c = oc.length_squared() - self.radius*self.radius;
+        const discriminant = h*h - a*c;
+
+        if (discriminant < 0)
+        {
+            return null;
+        }
+
+        const sqrtd = std.math.sqrt(discriminant);
+
+        // Find the nearest root that lies in the acceptable range.
+        var root = (h - sqrtd) / a;
+        if (interval.surrounds(root) == false) 
+        {
+            root = (h + sqrtd) / a;
+            if (interval.surrounds(root) == false)
+            {
+                return null;
+            }
+        }
+
+        const p = r.at(root);
+        var result : ray_hit.HitRecord = .{
+            .t = root,
+            .p = p,
+        };
+
+        const outward_normal = p.sub(self.center_worldspace).div(self.radius);
+        result.set_face_normal(r, outward_normal);
+        
+        return result;
+    }
+};
