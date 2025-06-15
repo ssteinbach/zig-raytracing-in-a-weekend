@@ -1,7 +1,7 @@
 //! utility functions for Raytracing in a Weekend
 
 const std = @import("std");
-const comath_wrapper = @import("comath_wrapper");
+const comath_wrapper = @import("comath_wrapper.zig");
 const vector = @import("vector.zig");
 
 const BaseType = vector.V3f.BaseType;
@@ -172,4 +172,15 @@ pub fn linear_to_gamma(
             ++ @typeName(@TypeOf(linear_component))
         ),
     };
+}
+
+pub fn reflect(
+    v: vector.V3f,
+    n: vector.V3f,
+) vector.V3f
+{
+    return comath_wrapper.eval(
+        "v - n * 2 * v.dot(n)",
+        .{ .v = v, .n = n },
+    );
 }
