@@ -457,6 +457,21 @@ pub fn Vec3Of(
 
             };
         }
+
+        /// returns true if all components of the vector are less than a small
+        /// epsilon
+        pub fn near_zero(
+            self: @This(),
+        ) bool
+        {
+            const eps = 1e-8;
+
+            return (
+                (@abs(self.x) < eps)
+                and (@abs(self.y) < eps)
+                and (@abs(self.z) < eps)
+            );
+        }
     };
 }
 
