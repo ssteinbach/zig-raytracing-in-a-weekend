@@ -119,10 +119,10 @@ pub const RNDR = struct {
             {
                 // wedging to make the gamut image
                 const scale:BaseType = (
-                    if (hitrec.p.x < -0.3) 0.1
-                    else if (hitrec.p.x < -0.1) 0.3
-                    else if (hitrec.p.x < 0.1) 0.5
-                    else if (hitrec.p.x < 0.3) 0.7
+                    if (hitrec.p.x < -0.4) 0.1
+                    else if (hitrec.p.x < -0.2) 0.3
+                    else if (hitrec.p.x < 0.2) 0.5
+                    else if (hitrec.p.x < 0.4) 0.7
                     else 0.9
                 );
                 const dir = hitrec.normal.add(utils.random_unit_vector());
