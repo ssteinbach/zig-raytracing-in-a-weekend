@@ -6,6 +6,7 @@ const vector = @import("vector.zig");
 const ray = @import("ray.zig");
 const geometry = @import("geometry.zig");
 const utils = @import("utils.zig");
+const material = @import("material.zig");
 
 
 const BaseType = vector.V3f.BaseType;
@@ -18,6 +19,7 @@ pub const HitRecord = struct {
     normal: vector.V3f = .{},
     /// distance along the ray the hit occured
     t: BaseType,
+    mat: *const material.Material,
 
     pub fn set_face_normal(
         self: *@This(),
