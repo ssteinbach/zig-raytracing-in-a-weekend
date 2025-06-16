@@ -151,25 +151,28 @@ pub fn random_on_hemisphere(
     );
 }
 
+/// take the square root as an approximation of the linear to gamma space
+/// transform
 pub fn linear_to_gamma(
-    linear_component: anytype,
-) @TypeOf(linear_component)
+    /// the linear component (or vector of components) to correct
+    lin_comp: anytype,
+) @TypeOf(lin_comp)
 {
-    return switch (@typeInfo(@TypeOf(linear_component))) {
+    return switch (@typeInfo(@TypeOf(lin_comp))) {
         .int, .comptime_int, .float, .comptime_float => (
-            if (linear_component > 0) std.math.sqrt(linear_component)
+            if (lin_comp > 0) std.math.sqrt(lin_comp)
             else 0
         ),
         .@"struct" => (
             vector.V3f{
-                .x = if (linear_component.x > 0) std.math.sqrt(linear_component.x) else 0,
-                .y = if (linear_component.y > 0) std.math.sqrt(linear_component.y) else 0,
-                .z = if (linear_component.z > 0) std.math.sqrt(linear_component.z) else 0,
+                .x = if (lin_comp.x > 0) std.math.sqrt(lin_comp.x) else 0,
+                .y = if (lin_comp.y > 0) std.math.sqrt(lin_comp.y) else 0,
+                .z = if (lin_comp.z > 0) std.math.sqrt(lin_comp.z) else 0,
             }
         ),
         else => @compileError(
             "Can only take the linear component of int, float, and Vector, not:"
-            ++ @typeName(@TypeOf(linear_component))
+            ++ @typeName(@TypeOf(lin_comp))
         ),
     };
 }
