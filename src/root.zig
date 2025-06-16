@@ -1,6 +1,5 @@
 //! Raytracing library
 const std = @import("std");
-const testing = std.testing;
 
 const image = @import("image.zig");
 const vector = @import("vector.zig");

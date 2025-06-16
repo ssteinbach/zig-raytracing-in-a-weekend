@@ -4,7 +4,6 @@ const std = @import("std");
 const builtin = @import("builtin");
 
 const raytrace = @import("raytrace");
-const image = raytrace.image;
 
 const ziis = @import("zgui_cimgui_implot_sokol");
 const zgui = ziis.zgui;
@@ -12,7 +11,7 @@ const zplot = zgui.plot;
 const sg = ziis.sokol.gfx;
 const app_wrapper = ziis.app_wrapper;
 
-const build_options = @import("build_options");
+// const build_options = @import("build_options");
 
 const STATE = struct {
     var f: f32 = 0;

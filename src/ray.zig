@@ -1,6 +1,5 @@
 //! Ray structure definition
 
-const std = @import("std");
 const vector = @import("vector.zig");
 const comath_wrapper = @import("comath_wrapper.zig");
 

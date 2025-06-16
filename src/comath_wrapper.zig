@@ -6,7 +6,6 @@ const std = @import("std");
 
 const comath = @import("comath");
 const vector = @import("vector.zig");
-const ray = @import("ray.zig");
 
 /// Comath Context for the Zig/RiaW project.  Comath allows for compile time
 /// operator overloading for math expressions like "a + b / c".

@@ -3,7 +3,6 @@ const std = @import("std");
 const ray = @import("ray.zig");
 const ray_hit = @import("ray_hit.zig");
 const vector = @import("vector.zig");
-const render_functions = @import("render_functions.zig");
 const utils = @import("utils.zig");
 
 /// a mapping of name to material

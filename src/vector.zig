@@ -499,9 +499,7 @@ pub fn expectV3fEqual(
         },
     };
 
-    const measured = (
-        measured_in catch |err| return err
-    );
+    const measured =  try measured_in;
 
     if (expected.is_nan() and measured.is_nan()) {
         return;
