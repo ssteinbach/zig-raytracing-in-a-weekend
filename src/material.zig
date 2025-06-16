@@ -55,6 +55,7 @@ pub const DEFAULT_LAMBERT = Material.init(Lambertian{});
 /// simple metallic material
 pub const Metallic = struct {
     albedo: vector.Color3f = vector.Color3f.init(0.2),
+    fuzz: vector.V3f.BaseType = 0,
 
     pub fn init(c: vector.Color3f) Material {
         return .{
@@ -70,12 +71,22 @@ pub const Metallic = struct {
         rec: ray_hit.HitRecord,
     ) ?ScatterResult
     {
-        const reflected = utils.reflect(r_in.dir, rec.normal);
+        var reflected = utils.reflect(r_in.dir, rec.normal);
+        reflected = reflected.unit_vector().add(utils.random_unit_vector().mul(self.fuzz));
 
-        return .{
+        const result = ScatterResult{
             .attentuation = self.albedo,
             .scattered = .{ .origin = rec.p, .dir = reflected },
         };
+
+        if (result.scattered.dir.dot(rec.normal) > 0)
+        {
+            return result;
+        }
+        else
+        {
+            return null;
+        }
     }
 };
 
