@@ -46,7 +46,10 @@ fn maybe_decl(
     comptime fn_type: type,
 ) ?*const fn_type
 {
-    return if (@hasDecl(T, name)) &@field(T, name) else null;
+    return (
+        if (@hasDecl(T, name)) &@field(T, name) 
+        else null
+    );
 }
 
 pub const Renderer = struct {
@@ -1899,7 +1902,7 @@ const image_9 = struct {
     pub fn init(
        allocator: std.mem.Allocator,
        img: *raytrace.Image_rgba_u8,
-    ) void
+    ) void 
     {
         state = State.init(allocator, img);
     }
