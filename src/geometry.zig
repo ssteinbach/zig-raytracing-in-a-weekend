@@ -4,10 +4,12 @@ const vector = @import("vector.zig");
 const ray = @import("ray.zig");
 const utils = @import("utils.zig");
 const ray_hit = @import("ray_hit.zig");
+const material = @import("material.zig");
 
 pub const Sphere = struct {
     center_worldspace : vector.Point3f,
     radius: vector.V3f.BaseType,
+    mat: *const material.Material = &material.DEFAULT_LAMBERT,
 
     pub fn format(
         self: @This(),
@@ -59,6 +61,7 @@ pub const Sphere = struct {
         var result : ray_hit.HitRecord = .{
             .t = root,
             .p = p,
+            .mat = self.mat,
         };
 
         const outward_normal = p.sub(self.center_worldspace).div(self.radius);
