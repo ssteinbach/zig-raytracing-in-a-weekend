@@ -41,7 +41,9 @@ pub const RNDR = struct {
             img: *raytrace.Image_rgba_u8,
         ) @This()
         {
-            const aspect_ratio:vector.V3f.BaseType = @floatFromInt(img.width / img.height);
+            const aspect_ratio:vector.V3f.BaseType = (
+                @floatFromInt(img.width / img.height)
+            );
             const image_width:usize = img.width;
             const image_height:usize = @intFromFloat(
                 @max(1.0, @as(BaseType, @floatFromInt(image_width)) / aspect_ratio)
@@ -49,9 +51,8 @@ pub const RNDR = struct {
 
             const viewport_height : BaseType = 2.0;
             const viewport_width : BaseType = (
-                (
-                 viewport_height 
-                 * @as(BaseType, @floatFromInt(image_width))) / @as(BaseType, @floatFromInt(image_height))
+                (viewport_height * @as(BaseType, @floatFromInt(image_width))) 
+                / @as(BaseType, @floatFromInt(image_height))
             );
 
             const viewport_u: vector.V3f = .{ 
@@ -212,7 +213,9 @@ pub const RNDR = struct {
             };
         }
 
-        fn sample_square() vector.V3f
+        /// generate random numbers over the [0,1) square in the x-y plane
+        fn sample_square(
+        ) vector.V3f
         {
             return .{
                 .x = utils.rnd_num(BaseType) - 0.5,
@@ -262,7 +265,9 @@ pub const RNDR = struct {
                 "right",
                 material.Material.init(
                     material.Metallic{
-                        .albedo = vector.Color3f.init_3(0.8, 0.6, 0.2),
+                        .albedo = (
+                            vector.Color3f.init_3(0.8, 0.6, 0.2)
+                        ),
                         .fuzz = 1.0,
                     },
                 ),
