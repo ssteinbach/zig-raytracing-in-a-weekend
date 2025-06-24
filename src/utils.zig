@@ -190,7 +190,7 @@ pub fn reflect(
 ) vector.V3f
 {
     return comath_wrapper.eval(
-        "v - n * 2 * v.dot(n)",
+        "v - (n * 2 * v.dot(n))",
         .{ .v = v, .n = n },
     );
 }
