@@ -50,6 +50,9 @@ pub fn Image(
             y: usize,
         ) []data_type
         {
+            std.debug.assert(x < self.width);
+            std.debug.assert(y < self.height);
+
             const start = x * channels + y * self.width * channels;
             return self.data[start..start+channels];
         }
