@@ -102,6 +102,13 @@ pub fn display_check(
         while (y < rows)
             : (y += 1)
         {
+            const x_ratio = (
+                @as(f32, @floatFromInt(x)) / @as(f32, @floatFromInt(cols))
+            );
+            const y_ratio = (
+                @as(f32, @floatFromInt(y)) / @as(f32, @floatFromInt(rows))
+            );
+
             const RAD = 3;
             const pixel_color_f = if (
                 (x < RAD and y < RAD)
@@ -109,9 +116,9 @@ pub fn display_check(
                 or (x > cols - RAD and y < RAD)
                 or (x > cols - RAD and y > rows - RAD)
             )
-                vector.Color3f.init([_]f32{1, 0, 0})
+                vector.Color3f.init([_]f32{0, 0, 1})
             else
-                vector.Color3f.init([_]f32{0.2, 0.2, 0.2});
+                vector.Color3f.init([_]f32{x_ratio, y_ratio, 0});
 
             const pixel_color = pixel_color_f.mul(255.999).as(u8);
 
@@ -119,7 +126,7 @@ pub fn display_check(
 
             pixel[0] = pixel_color.x;
             pixel[1] = pixel_color.y;
-            pixel[2] = 0;
+            pixel[2] = pixel_color.z;
             pixel[3] = 255;
         }
     }
