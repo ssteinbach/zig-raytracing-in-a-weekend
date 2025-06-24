@@ -20,6 +20,7 @@ pub const HitRecord = struct {
     /// distance along the ray the hit occured
     t: BaseType,
     mat: *const material.Material,
+    front_face : bool = false,
 
     pub fn set_face_normal(
         self: *@This(),
@@ -27,8 +28,11 @@ pub const HitRecord = struct {
         outward_normal: vector.V3f,
     ) void
     {
-        const front_face = r.dir.dot(outward_normal) < 0;
-        self.*.normal = if (front_face) outward_normal else outward_normal.neg();
+        self.front_face = r.dir.dot(outward_normal) < 0;
+        self.*.normal = (
+            if (self.front_face) outward_normal 
+            else outward_normal.neg()
+        );
     }
 };
 
