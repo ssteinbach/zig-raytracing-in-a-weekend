@@ -90,10 +90,43 @@ pub const Metallic = struct {
     }
 };
 
+/// material that always refracts
+pub const Dielectric = struct {
+    albedo: vector.Color3f = vector.Color3f.init(0.2),
+    refraction_index: vector.V3f.BaseType,
+
+    pub fn scatter(
+        self: @This(),
+        r_in: ray.Ray,
+        rec: ray_hit.HitRecord,
+    ) ?ScatterResult
+    {
+        const attenuation = vector.Color3f.init(1.0);
+        const ri = (
+            if (rec.front_face) 1.0 / self.refraction_index 
+            else self.refraction_index
+        );
+
+        const unit_direction = r_in.dir.unit_vector();
+        const refracted = utils.refract(
+            unit_direction,
+            rec.normal,
+            ri
+        );
+
+        return .{
+            .scattered = .{ .origin = rec.p, .dir = refracted },
+            .attentuation = attenuation,
+        };
+    }
+};
+
 pub const Material = union (enum) {
     diffuse : Lambertian,
     metallic : Metallic,
+    dielectric: Dielectric,
 
+    /// initialize a Material from a unioned enum type
     pub fn init(
         thing: anytype,
     ) Material
@@ -101,10 +134,10 @@ pub const Material = union (enum) {
         return switch (@TypeOf(thing)) {
             Lambertian => .{ .diffuse = thing },
             Metallic => .{ .metallic = thing },
+            Dielectric => .{ .dielectric = thing },
             else => @compileError(
                 "Type " ++ @typeName(@TypeOf(thing)) ++ " is not a material."
-                ),
-                
+            ),
         };
     }
 
