@@ -10,19 +10,26 @@ const INF = std.math.inf(BaseType);
 var prng = std.Random.DefaultPrng.init(0);
 pub const rand = prng.random();
 
+pub fn rnd_float_centered(
+    comptime T: type,
+) T
+{
+    return (rand.float(T) - 0.5);
+}
+
 // [0, 1)
 pub fn rnd_num(
     comptime T: type,
 ) T 
 {
     return switch (@typeInfo(T)) {
-        .float, .comptime_float, => return rand.float(T),
-        .int, .comptime_int, => return rand.float(T),
+        .float, .comptime_float, => return rnd_float_centered(T),
+        // .int, .comptime_int, => return rand.float(T),
         .@"struct" => switch (T) {
             vector.V3f => vector.V3f{
-                .x = rand.float(vector.V3f.BaseType),
-                .y = rand.float(vector.V3f.BaseType),
-                .z = rand.float(vector.V3f.BaseType),
+                .x = rnd_float_centered(vector.V3f.BaseType),
+                .y = rnd_float_centered(vector.V3f.BaseType),
+                .z = rnd_float_centered(vector.V3f.BaseType),
             },
             else => @compileError(
                     "Can only generate random ints, floats, and V3f, not: " 
