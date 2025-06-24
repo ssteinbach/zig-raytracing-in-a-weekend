@@ -90,8 +90,8 @@ pub const Metallic = struct {
     }
 };
 
-/// material that always refracts
-pub const Dielectric = struct {
+/// material that always refracts (image 16)
+pub const DielectricAlwaysRefract = struct {
     albedo: vector.Color3f = vector.Color3f.init(0.2),
     refraction_index: vector.V3f.BaseType,
 
@@ -121,10 +121,46 @@ pub const Dielectric = struct {
     }
 };
 
+/// image 17
+pub const DielectricReflRefr = struct {
+    albedo: vector.Color3f = vector.Color3f.init(0.2),
+    refraction_index: vector.V3f.BaseType,
+
+    pub fn scatter(
+        self: @This(),
+        r_in: ray.Ray,
+        rec: ray_hit.HitRecord,
+    ) ?ScatterResult
+    {
+        const attenuation = vector.Color3f.init(1.0);
+        const ri = (
+            if (rec.front_face) 1.0 / self.refraction_index 
+            else self.refraction_index
+        );
+
+        const unit_direction = r_in.dir.unit_vector();
+        const cos_theta = @min(unit_direction.neg().dot(rec.normal), 1.0);
+        const sin_theta = std.math.sqrt(1.0 - (cos_theta*cos_theta));
+
+        const cannot_refract = ri * sin_theta > 1.0;
+
+        const dir = (
+            if (cannot_refract) utils.reflect(unit_direction, rec.normal)
+            else utils.refract(unit_direction, rec.normal, ri)
+        );
+
+        return .{
+            .scattered = .{ .origin = rec.p, .dir = dir },
+            .attentuation = attenuation,
+        };
+    }
+};
+
 pub const Material = union (enum) {
     diffuse : Lambertian,
     metallic : Metallic,
-    dielectric: Dielectric,
+    dielectric_always_refract: DielectricAlwaysRefract,
+    dielectric_refl_refr: DielectricReflRefr,
 
     /// initialize a Material from a unioned enum type
     pub fn init(
@@ -134,7 +170,8 @@ pub const Material = union (enum) {
         return switch (@TypeOf(thing)) {
             Lambertian => .{ .diffuse = thing },
             Metallic => .{ .metallic = thing },
-            Dielectric => .{ .dielectric = thing },
+            DielectricAlwaysRefract => .{ .dielectric_always_refract= thing },
+            DielectricReflRefr => .{ .dielectric_refl_refr= thing },
             else => @compileError(
                 "Type " ++ @typeName(@TypeOf(thing)) ++ " is not a material."
             ),

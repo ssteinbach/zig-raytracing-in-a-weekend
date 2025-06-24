@@ -250,9 +250,9 @@ pub const RNDR = struct {
             try mtl_map.put(
                 "left",
                 material.Material.init(
-                    material.DielectricAlwaysRefract{
+                    material.DielectricReflRefr{
                         .albedo =vector.Color3f.init(1.0),
-                        .refraction_index = 1.5,
+                        .refraction_index = 1.0/1.33,
                     },
                 ),
             );
