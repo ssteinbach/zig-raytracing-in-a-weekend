@@ -40,11 +40,8 @@ pub const RNDR = struct {
             img: *raytrace.Image_rgba_u8,
         ) @This()
         {
-            const aspect_ratio:vector.V3f.BaseType = @floatFromInt(img.width / img.height);
             const image_width:usize = img.width;
-            const image_height:usize = @intFromFloat(
-                @max(1.0, @as(BaseType, @floatFromInt(image_width)) / aspect_ratio)
-            );
+            const image_height:usize = img.height;
 
             const viewport_height : BaseType = 2.0;
             const viewport_width : BaseType = (

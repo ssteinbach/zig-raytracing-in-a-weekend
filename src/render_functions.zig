@@ -37,6 +37,7 @@ pub const RENDERERS = [_]Renderer{
     Renderer.init(@import("renderers/image_12.zig").RNDR, "Gamma Corrected Gamut"),
     Renderer.init(@import("renderers/image_13.zig").RNDR, "Shiny Metal"),
     Renderer.init(@import("renderers/image_14.zig").RNDR, "Fuzzed Metal"),
+    Renderer.init(@import("renderers/image_16.zig").RNDR, "Glass"),
     // Renderer.init(@import("renderers/image_15.zig").RNDR, "Glass First"),
 };
 
@@ -264,11 +265,11 @@ const image_2 = struct {
         );
 
         var j:usize = 0;
-        while (j < image_height)
+        while (j < img.height)
             : (j+=1)
         {
             var i:usize = 0;
-            while (i < image_width)
+            while (i < img.width)
                 : (i+=1)
             {
                 const pixel_center = comath_wrapper.eval(
@@ -329,12 +330,8 @@ const image_3 = struct {
         _: usize,
     ) void
     {
-        const aspect_ratio:vector.V3f.BaseType = @floatFromInt(img.width / img.height);
         const image_width:usize = img.width;
-
-        const image_height:usize = @intFromFloat(
-            @max(1.0, @as(BaseType, @floatFromInt(image_width)) / aspect_ratio)
-        );
+        const image_height:usize = img.height;
 
         const viewport_height : BaseType = 2.0;
         const viewport_width : BaseType = (
@@ -480,12 +477,8 @@ const image_4 = struct {
         _: usize,
     ) void
     {
-        const aspect_ratio:vector.V3f.BaseType = @floatFromInt(img.width / img.height);
         const image_width:usize = img.width;
-
-        const image_height:usize = @intFromFloat(
-            @max(1.0, @as(BaseType, @floatFromInt(image_width)) / aspect_ratio)
-        );
+        const image_height:usize = img.height;
 
         const viewport_height : BaseType = 2.0;
         const viewport_width : BaseType = (
@@ -658,12 +651,8 @@ const image_5 = struct {
             )
         ) catch @panic("OOM!");
 
-        const aspect_ratio:vector.V3f.BaseType = @floatFromInt(img.width / img.height);
         const image_width:usize = img.width;
-
-        const image_height:usize = @intFromFloat(
-            @max(1.0, @as(BaseType, @floatFromInt(image_width)) / aspect_ratio)
-        );
+        const image_height:usize = img.height;
 
         const viewport_height : BaseType = 2.0;
         const viewport_width : BaseType = (
@@ -791,7 +780,7 @@ const image_6 = struct {
         pixel_delta_u: vector.V3f,
         pixel_delta_v: vector.V3f,
 
-        const samples_per_pixel:usize = 10;
+        const samples_per_pixel:usize = 20;
         const pixel_sample_scale:BaseType = (
             1.0/@as(BaseType, @floatFromInt(samples_per_pixel))
         );
@@ -802,11 +791,8 @@ const image_6 = struct {
             img: *raytrace.Image_rgba_u8,
         ) @This()
         {
-            const aspect_ratio:vector.V3f.BaseType = @floatFromInt(img.width / img.height);
             const image_width:usize = img.width;
-            const image_height:usize = @intFromFloat(
-                @max(1.0, @as(BaseType, @floatFromInt(image_width)) / aspect_ratio)
-            );
+            const image_height:usize = img.height;
 
             const viewport_height : BaseType = 2.0;
             const viewport_width : BaseType = (
@@ -1080,11 +1066,8 @@ const image_7 = struct {
             img: *raytrace.Image_rgba_u8,
         ) @This()
         {
-            const aspect_ratio:vector.V3f.BaseType = @floatFromInt(img.width / img.height);
             const image_width:usize = img.width;
-            const image_height:usize = @intFromFloat(
-                @max(1.0, @as(BaseType, @floatFromInt(image_width)) / aspect_ratio)
-            );
+            const image_height:usize = img.height;
 
             const viewport_height : BaseType = 2.0;
             const viewport_width : BaseType = (
@@ -1366,11 +1349,8 @@ const image_8 = struct {
             img: *raytrace.Image_rgba_u8,
         ) @This()
         {
-            const aspect_ratio:vector.V3f.BaseType = @floatFromInt(img.width / img.height);
             const image_width:usize = img.width;
-            const image_height:usize = @intFromFloat(
-                @max(1.0, @as(BaseType, @floatFromInt(image_width)) / aspect_ratio)
-            );
+            const image_height:usize = img.height;
 
             const viewport_height : BaseType = 2.0;
             const viewport_width : BaseType = (
@@ -1660,11 +1640,8 @@ const image_9 = struct {
             img: *raytrace.Image_rgba_u8,
         ) @This()
         {
-            const aspect_ratio:vector.V3f.BaseType = @floatFromInt(img.width / img.height);
             const image_width:usize = img.width;
-            const image_height:usize = @intFromFloat(
-                @max(1.0, @as(BaseType, @floatFromInt(image_width)) / aspect_ratio)
-            );
+            const image_height:usize = img.height;
 
             const viewport_height : BaseType = 2.0;
             const viewport_width : BaseType = (
@@ -1954,11 +1931,8 @@ const image_10 = struct {
             img: *raytrace.Image_rgba_u8,
         ) @This()
         {
-            const aspect_ratio:vector.V3f.BaseType = @floatFromInt(img.width / img.height);
             const image_width:usize = img.width;
-            const image_height:usize = @intFromFloat(
-                @max(1.0, @as(BaseType, @floatFromInt(image_width)) / aspect_ratio)
-            );
+            const image_height:usize = img.height;
 
             const viewport_height : BaseType = 2.0;
             const viewport_width : BaseType = (

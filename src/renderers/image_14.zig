@@ -41,13 +41,8 @@ pub const RNDR = struct {
             img: *raytrace.Image_rgba_u8,
         ) @This()
         {
-            const aspect_ratio:vector.V3f.BaseType = (
-                @floatFromInt(img.width / img.height)
-            );
             const image_width:usize = img.width;
-            const image_height:usize = @intFromFloat(
-                @max(1.0, @as(BaseType, @floatFromInt(image_width)) / aspect_ratio)
-            );
+            const image_height:usize = img.height;
 
             const viewport_height : BaseType = 2.0;
             const viewport_width : BaseType = (
@@ -87,7 +82,7 @@ pub const RNDR = struct {
                 .pixel_delta_u = pixel_delta_u,
                 .pixel_delta_v = pixel_delta_v,
                 .pixel00_loc = comath_wrapper.eval(
-                    "v_ul + (pdu + pdv) * 0.5",
+                    "v_ul + ((pdu + pdv) * 0.5)",
                     .{
                         .v_ul = viewport_upper_left,
                         .pdu = pixel_delta_u,
@@ -126,7 +121,7 @@ pub const RNDR = struct {
                         scatter.scattered,
                         depth - 1,
                         world
-                    ).mul(scatter.attentuation.mul(0.5));
+                    ).mul(scatter.attentuation);
                 }
                 else return vector.Color3f.ZERO;
             }

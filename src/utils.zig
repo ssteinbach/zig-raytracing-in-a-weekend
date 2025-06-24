@@ -184,6 +184,7 @@ pub fn linear_to_gamma(
     };
 }
 
+/// reflect v about the surface normal n
 pub fn reflect(
     v: vector.V3f,
     n: vector.V3f,
