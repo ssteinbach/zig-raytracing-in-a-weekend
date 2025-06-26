@@ -39,6 +39,7 @@ pub const RENDERERS = [_]Renderer{
     Renderer.init(@import("renderers/image_14.zig").RNDR, "Fuzzed Metal"),
     Renderer.init(@import("renderers/image_16.zig").RNDR, "Glass"),
     Renderer.init(@import("renderers/image_17.zig").RNDR, "Air bubble sometimes refracts, sometimes reflects"),
+    Renderer.init(@import("renderers/image_18.zig").RNDR, "Hollow Glass Sphere"),
     // Renderer.init(@import("renderers/image_15.zig").RNDR, "Glass First"),
 };
 
