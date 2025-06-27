@@ -58,15 +58,13 @@ pub const Sphere = struct {
         }
 
         const p = r.at(root);
-        var result : ray_hit.HitRecord = .{
-            .t = root,
-            .p = p,
-            .mat = self.mat,
-        };
 
-        const outward_normal = p.sub(self.center_worldspace).div(self.radius);
-        result.set_face_normal(r, outward_normal);
-        
-        return result;
+        return ray_hit.HitRecord.init_face_normal(
+            p, 
+            root,
+            p.sub(self.center_worldspace).div(self.radius),
+            self.mat,
+            r,
+        );
     }
 };

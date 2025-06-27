@@ -34,6 +34,27 @@ pub const HitRecord = struct {
             else outward_normal.neg()
         );
     }
+
+    pub fn init_face_normal(
+        p: vector.Point3f,
+        t: BaseType,
+        outward_normal: vector.V3f,
+        mat: *const material.Material,
+        r: ray.Ray,
+    ) @This()
+    {
+        const front_face = r.dir.dot(outward_normal) < 0;
+        return .{
+            .p = p,
+            .t = t,
+            .mat = mat,
+            .front_face = front_face,
+            .normal = (
+                if (front_face) outward_normal 
+                else outward_normal.neg()
+            ),
+        };
+    }
 };
 
 pub const Hittable = union (enum) {
