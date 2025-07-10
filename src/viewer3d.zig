@@ -10,6 +10,7 @@ const sokol = ziis.sokol;
 const zgui = ziis.zgui;
 const zplot = zgui.plot;
 const sg = ziis.sokol.gfx;
+const sgl = ziis.sokol.gl;
 //------------------------------------------------------------------------------
 //  shapes.zig
 //
@@ -32,7 +33,7 @@ const Shape = struct {
     draw: sshape.ElementRange = .{},
 };
 
-const NUM_SHAPES = 5;
+// const NUM_SHAPES = 5;
 
 const IS_WASM = builtin.target.cpu.arch.isWasm();
 
@@ -45,23 +46,24 @@ const backing_allocator = (
     if (IS_WASM) std.heap.c_allocator 
     else gpa.allocator()
 );
-var single_threaded_arena = std.heap.ArenaAllocator.init(
-    backing_allocator
-);
-const allocator = single_threaded_arena.allocator();
+// var single_threaded_arena = std.heap.ArenaAllocator.init(
+//     backing_allocator
+// );
+// const allocator = single_threaded_arena.allocator();
+const allocator = gpa.allocator();
 
 const state = struct {
     var pass_action: sg.PassAction = .{};
     var pip: sg.Pipeline = .{};
     var bind: sg.Bindings = .{};
     var vs_params: shd.VsParams = undefined;
-    var shapes: [NUM_SHAPES]Shape = .{
-        .{ .pos = .{ .x = -1, .y = 1, .z = 0 } },
-        .{ .pos = .{ .x = 1, .y = 1, .z = 0 } },
-        .{ .pos = .{ .x = -2, .y = -1, .z = 0 } },
-        .{ .pos = .{ .x = 2, .y = -1, .z = 0 } },
-        .{ .pos = .{ .x = 0, .y = -1, .z = 0 } },
-    };
+    // var shapes: [NUM_SHAPES]Shape = .{
+    //     .{ .pos = .{ .x = -1, .y = 1, .z = 0 } },
+    //     .{ .pos = .{ .x = 1, .y = 1, .z = 0 } },
+    //     .{ .pos = .{ .x = -2, .y = -1, .z = 0 } },
+    //     .{ .pos = .{ .x = 2, .y = -1, .z = 0 } },
+    //     .{ .pos = .{ .x = 0, .y = -1, .z = 0 } },
+    // };
     var dyn_shapes: []Shape = &.{};
     var rx: f32 = 0.0;
     var ry: f32 = 0.0;
@@ -84,10 +86,22 @@ export fn init(
     img22.RNDR.init(allocator, &img);
     state.rndr_state = img22.RNDR.state.?;
 
-    sg.setup(.{
-        .environment = sglue.environment(),
-        .logger = .{ .func = slog.func },
-    });
+    sg.setup(
+        .{
+            .environment = sglue.environment(),
+            .logger = .{
+                .func = slog.func 
+            },
+        },
+        );
+
+    sgl.setup(
+        .{
+            .logger = .{
+                .func = slog.func,
+            },
+        },
+    );
 
     var sdtx_desc: sdtx.Desc = .{
         .logger = .{ .func = slog.func },
@@ -122,39 +136,39 @@ export fn init(
     });
 
     // generate shape geometries
-    var vertices: [6 * 1024]sshape.Vertex = undefined;
-    var indices: [16 * 1024]u16 = undefined;
+    var vertices: [60 * 1024]sshape.Vertex = undefined;
+    var indices: [160 * 1024]u16 = undefined;
     var buf: sshape.Buffer = .{
         .vertices = .{ .buffer = sshape.asRange(&vertices) },
         .indices = .{ .buffer = sshape.asRange(&indices) },
     };
-    buf = sshape.buildBox(
-        buf,
-        .{
-            .width = 1.0,
-            .height = 1.0,
-            .depth = 1.0,
-            .tiles = 10,
-            .random_colors = true,
-        }
-    );
-    state.shapes[0].draw = sshape.elementRange(buf);
-    buf = sshape.buildPlane(
-        buf,
-        .{
-            .width = 1.0,
-            .depth = 1.0,
-            .tiles = 10,
-            .random_colors = true,
-        }
-    );
-    state.shapes[1].draw = sshape.elementRange(buf);
-    // buf = sshape.buildSphere(buf, .{
-    //     .radius = 0.75,
-    //     .slices = 36,
-    //     .stacks = 20,
-    //     .random_colors = true,
-    // });
+    // buf = sshape.buildBox(
+    //     buf,
+    //     .{
+    //         .width = 1.0,
+    //         .height = 1.0,
+    //         .depth = 1.0,
+    //         .tiles = 10,
+    //         .random_colors = true,
+    //     }
+    // );
+    // state.shapes[0].draw = sshape.elementRange(buf);
+    // buf = sshape.buildPlane(
+    //     buf,
+    //     .{
+    //         .width = 1.0,
+    //         .depth = 1.0,
+    //         .tiles = 10,
+    //         .random_colors = true,
+    //     }
+    // );
+    // state.shapes[1].draw = sshape.elementRange(buf);
+    buf = sshape.buildSphere(buf, .{
+        .radius = 0.75,
+        .slices = 36,
+        .stacks = 20,
+        .random_colors = true,
+    });
     // state.shapes[2].draw = sshape.elementRange(buf);
     // buf = sshape.buildCylinder(buf, .{
     //     .radius = 0.5,
@@ -173,37 +187,103 @@ export fn init(
     // });
     // state.shapes[4].draw = sshape.elementRange(buf);
 
-    // var shapebuilder = std.ArrayList(Shape).init(allocator);
+    var shapebuilder = std.ArrayList(Shape).init(allocator);
 
-    // for (state.rndr_state.world)
-    //     |hittable|
-    // {
-    //     switch (hittable)
-    //     {
-    //         .sphere => |sph| {
-    //             buf = sshape.buildSphere(
-    //                 buf,
-    //                 .{
-    //                     .radius = sph.radius,
-    //                     .slices = 36,
-    //                     .stacks = 20,
-    //                     .random_colors = true,
-    //                 },
-    //             );
-    //             shapebuilder.append(
-    //                 .{ 
-    //                     .pos = .{
-    //                         .x = sph.center_worldspace.x,
-    //                         .y = sph.center_worldspace.y,
-    //                         .z = sph.center_worldspace.z,
-    //                     },
-    //                     .draw = sshape.elementRange(buf),
-    //                 },
-    //             ) catch @panic("arg");
+    std.debug.print("\nprebuilt\n", .{});
+    for (state.rndr_state.world)
+        |hittable|
+    {
+        switch (hittable)
+        {
+            .sphere => |sph| {
+                std.debug.print("adding sphere: {d}\n", .{ sph.radius});
+                const slices = 36;
+                const stacks = 20;
+                buf = if (sph.radius < 10) (
+                    sshape.buildSphere(
+                        buf,
+                        .{
+                            .radius = sph.radius,
+                            .slices = slices,
+                            .stacks = stacks,
+                            .random_colors = true,
+                        },
+                    )
+                )
+                else (
+                    sshape.buildSphere(
+                        buf,
+                        .{
+                            .radius = sph.radius,
+                            .slices = slices * 4,
+                            .stacks = stacks * 4,
+                            .random_colors = true,
+                        },
+                    )
+                );
+                shapebuilder.append(
+                    .{ 
+                        .pos = .{
+                            .x = sph.center_worldspace.x,
+                            .y = sph.center_worldspace.y,
+                            .z = sph.center_worldspace.z,
+                        },
+                        .draw = sshape.elementRange(buf),
+                    },
+                ) catch @panic("arg");
+
+            },
+            // else => {
+            //     std.debug.print("unknown thing\n", .{});
+            // }
+        }
+    }
+
+    // camera
+    buf = sshape.buildSphere(
+        buf,
+        .{
+            .radius = 0.25,
+            .slices = 16,
+            .stacks = 5,
+            .random_colors = false,
+        },
+    );
+    shapebuilder.append(
+        .{ 
+            .pos = .{
+                .x = state.rndr_state.camera.center.x,
+                .y = state.rndr_state.camera.center.y,
+                .z = state.rndr_state.camera.center.z,
+            },
+            .draw = sshape.elementRange(buf),
+        },
+    ) catch @panic("arg");
+
+    // buf = sshape.buildSphere(
+    //     buf,
+    //     .{
+    //         .radius = 1.25,
+    //         .slices = 16,
+    //         .stacks = 5,
+    //         .random_colors = false,
+    //     },
+    // );
+    // shapebuilder.append(
+    //     .{ 
+    //         .pos = .{
+    //             .x = state.rndr_state.camera.look_at.x,
+    //             .y = state.rndr_state.camera.look_at.y,
+    //             .z = state.rndr_state.camera.look_at.z,
     //         },
-    //     }
-    // }
-    assert(buf.valid);
+    //         .draw = sshape.elementRange(buf),
+    //     },
+    // ) catch @panic("arg");
+
+    // assert(buf.valid);
+    std.debug.print("\nbuilt\n", .{});
+
+    state.dyn_shapes = shapebuilder.toOwnedSlice() catch @panic("blurg");
 
     // one vertex- and index-buffer for all shapes
     state.bind.vertex_buffers[0] = sg.makeBuffer(sshape.vertexBufferDesc(buf));
@@ -238,7 +318,7 @@ export fn frame(
     sg.applyPipeline(state.pip);
     sg.applyBindings(state.bind);
 
-    for (state.shapes) 
+    for (state.dyn_shapes) 
         |shape| 
     {
         // per-shape model-view-projection matrix
@@ -249,8 +329,28 @@ export fn frame(
     }
 
     sdtx.draw();
+
+    {
+        {
+            sgl.beginLines();
+            // from the camera
+            sgl.v3f(
+                state.rndr_state.camera.center.x,
+                state.rndr_state.camera.center.y,
+                state.rndr_state.camera.center.z,
+            );
+            sgl.v3f(
+                state.rndr_state.camera.look_at.x,
+                state.rndr_state.camera.look_at.y,
+                state.rndr_state.camera.look_at.z,
+            );
+            defer sgl.end();
+        }
+        sgl.draw();
+    }
     sg.endPass();
     sg.commit();
+
 }
 
 export fn input(

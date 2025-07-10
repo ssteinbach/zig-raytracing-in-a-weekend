@@ -11,7 +11,7 @@ const BuildState = struct {
 
 pub fn executable(
     b: *std.Build,
-    name: []const u8,
+    comptime name: []const u8,
     main_filepath: []const u8,
     state: BuildState,
 ) void
@@ -32,7 +32,7 @@ pub fn executable(
 
         const exe = b.addExecutable(
             .{
-                .name = "viewer",
+                .name = name,
                 .root_module = exe_mod,
             }
         );
