@@ -201,4 +201,13 @@ pub fn build(
             state
         );
     }
+
+    {
+        executable(
+            b,
+            "debug_writer",
+            "src/debug_writer.zig",
+            state
+        );
+    }
 }
