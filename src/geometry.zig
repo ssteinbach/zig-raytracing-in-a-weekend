@@ -7,6 +7,7 @@ const ray_hit = @import("ray_hit.zig");
 const material = @import("material.zig");
 
 pub const Sphere = struct {
+    name: []const u8 = "",
     center_worldspace : vector.Point3f,
     radius: vector.V3f.BaseType,
     mat: *const material.Material = &material.DEFAULT_LAMBERT,
