@@ -9,6 +9,7 @@ const comath_wrapper = @import("comath_wrapper.zig");
 const utils = @import("utils.zig");
 const geometry = @import("geometry.zig");
 pub const img22 = @import("renderers/image_22.zig");
+pub const img23 = @import("renderers/image_23.zig");
 
 pub const BaseType = vector.V3f.BaseType;
 pub const INF = std.math.inf(BaseType);

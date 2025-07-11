@@ -248,8 +248,8 @@ pub fn main(
         400,
     ) catch @panic("couldn't make image");
 
-    raytrace.render_functions.img22.RNDR.init(allocator, &img);
-    const state = raytrace.render_functions.img22.RNDR.state.?;
+    raytrace.render_functions.img23.RNDR.init(allocator, &img);
+    const state = raytrace.render_functions.img23.RNDR.state.?;
 
     // file to write to
     const file = try std.fs.cwd().createFile(
