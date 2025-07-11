@@ -10,6 +10,7 @@ const INF = std.math.inf(BaseType);
 var prng = std.Random.DefaultPrng.init(0);
 pub const rand = prng.random();
 
+// random number in [-0.5, 0.5)
 pub fn rnd_float_centered(
     comptime T: type,
 ) T
@@ -17,7 +18,7 @@ pub fn rnd_float_centered(
     return (rand.float(T) - 0.5);
 }
 
-// [0, 1)
+// Random number / vector in [-0.5, 0.5]
 pub fn rnd_num(
     comptime T: type,
 ) T 
@@ -43,13 +44,53 @@ pub fn rnd_num(
     };
 }
 
+test "random number: [-0.5, 0.5)"
+{ 
+    const low = -0.5;
+    const hi = 0.5;
+
+    var i: usize = 0;
+    while (i < 10000)
+        : (i += 1)
+    {
+        const n = rnd_num(BaseType);
+
+        errdefer std.debug.print("Error with n: {d}\n", .{ n });
+
+        try std.testing.expect(n >= low and n < hi);
+    }
+
+}
+
+// Random number in [low_inclusive, high_exclusive)
 pub fn rnd_num_range(
     comptime T: type,
-    low_inclusive: f32,
-    high_exclusive: f32,
+    low_inclusive: T,
+    high_exclusive: T,
 ) T
 {
-    return comath_wrapper.lerp(rnd_num(T), low_inclusive, high_exclusive);
+    return comath_wrapper.lerp(
+        rand.float(T),
+        low_inclusive,
+        high_exclusive
+    );
+}
+
+test "random number generator: [2, 3)" 
+{
+    const low = 2;
+    const hi = 3;
+
+    var i: usize = 0;
+    while (i < 10000)
+        : (i += 1)
+    {
+        const n = rnd_num_range(BaseType, low, hi);
+
+        errdefer std.debug.print("Error with n: {d}\n", .{ n });
+
+        try std.testing.expect(n >= low and n < hi);
+    }
 }
 
 pub const Interval = struct {
@@ -143,6 +184,43 @@ pub fn random_unit_vector(
             // normalize the length
             return p.div(std.math.sqrt(len_sq));
         }
+    }
+}
+
+// produce a point in the z=0 plane such that x,y [-1, 1)
+pub fn random_in_unit_disk(
+) vector.V3f
+{
+    while (true)
+    {
+        const p = vector.V3f.init_2(
+           rnd_num_range(BaseType, -1, 1), 
+           rnd_num_range(BaseType, -1, 1), 
+        );
+
+        if ((p.x*p.x) + (p.y * p.y) < 1)
+        {
+            return p;
+        }
+    }
+}
+
+test "random in unit disk"
+{
+    const low = -1;
+    const hi = 1;
+
+    var i: usize = 0;
+    while (i < 10000)
+        : (i += 1)
+    {
+        const p = random_in_unit_disk();
+
+        errdefer std.debug.print("Error with p: {s}\n", .{ p });
+
+        try std.testing.expect(p.length_squared() < 1 and p.length_squared() > 0);
+        try std.testing.expect(p.x > low and p.x < hi);
+        try std.testing.expect(p.y > low and p.y < hi);
     }
 }
 

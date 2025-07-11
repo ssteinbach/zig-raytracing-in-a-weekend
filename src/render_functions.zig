@@ -8,6 +8,7 @@ const vector = @import("vector.zig");
 const comath_wrapper = @import("comath_wrapper.zig");
 const utils = @import("utils.zig");
 const geometry = @import("geometry.zig");
+pub const img22 = @import("renderers/image_22.zig");
 
 pub const BaseType = vector.V3f.BaseType;
 pub const INF = std.math.inf(BaseType);
@@ -43,6 +44,7 @@ pub const RENDERERS = [_]Renderer{
     Renderer.init(@import("renderers/image_19.zig").RNDR, "Wide Angle View"),
     Renderer.init(@import("renderers/image_20.zig").RNDR, "A distant view"),
     Renderer.init(@import("renderers/image_21.zig").RNDR, "Zooming in"),
+    Renderer.init(img22.RNDR, "Spheres with depth-of-field"),
     // Renderer.init(@import("renderers/image_15.zig").RNDR, "Glass First"),
 };
 
