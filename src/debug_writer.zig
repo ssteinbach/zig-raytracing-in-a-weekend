@@ -13,8 +13,16 @@ const TextWriter = std.ArrayList(u8).Writer;
 
 const PREFIX = "#usda 1.0\n";
 
-pub fn write_sphere(
+const BASIS_CURVE_TEMPLATE = \\
+    \\ uniform token type = "linear"
+    \\ int[] curveVertexCounts = [{d}]
+    \\ float[] widths = [1.5] (interpolation = "constant") 
+    \\ color3f[] primvars:displayColor = [(1, 0, 0)]
+    \\ point3f[] points = [{s}]
+    \\
+ ;
 
+pub fn write_sphere(
     allocator: std.mem.Allocator,
     parent_writer: *TextWriter,
     sph: raytrace.geometry.Sphere,
@@ -80,6 +88,101 @@ pub fn write_sphere(
     );
 
     _ = try xform_w.write(try sphere.commit());
+
+    _ = try parent_writer.write(try xform.commit());
+}
+
+pub fn write_rays(
+    allocator: std.mem.Allocator,
+    parent_writer: *TextWriter,
+    rays: []const raytrace.ray.Ray,
+    name: []const u8,
+) !void
+{
+    var buf = std.mem.zeroes([10*1024]u8);
+
+    var xform = try BlockWriter.init(
+        allocator,
+        try std.fmt.bufPrint(
+            &buf,
+            "def Xform \"{?s}\"",
+            .{ name },
+        ),
+
+    );
+    defer xform.deinit();
+
+    var xform_w = xform.writer();
+    _ = try xform_w.write(
+        try std.fmt.bufPrint(
+            &buf,
+            "double3 xformOp:translate = ({d}, {d}, {d})\n",
+            .{ 0,0,0 },
+        ),
+    );
+    _ = try xform_w.write(
+        try std.fmt.bufPrint(
+            &buf,
+            "    uniform token[] xformOpOrder = [\"xformOp:translate\"]\n",
+            .{},
+        ),
+    );
+
+        //     def BasisCurves "ConstantWidth" (){
+        //     uniform token[] xformOpOrder = ["xformOp:translate"]
+        //     float3 xformOp:translate = (3, 0, 0)
+        //
+        //     uniform token type = "linear"
+        //     int[] curveVertexCounts = [7]
+        //     point3f[] points = [(0, 0, 0), (1, 1, 0), (1, 2, 0), (0, 3, 0), (-1, 4, 0), (-1, 5, 0), (0, 6, 0)]
+        //     float[] widths = [.5] (interpolation = "constant") 
+        //     color3f[] primvars:displayColor = [(1, 0, 0)]
+        // }
+    var linear_curves = try BlockWriter.init(
+        allocator,
+        try std.fmt.bufPrint(
+            &buf,
+            "def BasisCurves \"Tubes\"\n",
+            .{},
+        ),
+
+    );
+    defer linear_curves.deinit();
+
+    var linear_curve_w = linear_curves.writer();
+
+    var points = std.ArrayList(u8).init(allocator);
+    defer points.deinit();
+    var p_w = points.writer();
+    for (rays)
+        |r|
+    {
+        const end = r.origin.add(r.dir);
+        _ = try p_w.write(
+            try std.fmt.bufPrint(
+                &buf,
+                "({d}, {d}, {d}), ({d}, {d}, {d}), ",
+                .{
+                    r.origin.x,
+                    r.origin.y,
+                    r.origin.z,
+                    end.x,
+                    end.y,
+                    end.z,
+            },
+            ),
+        );
+    }
+
+    _ = try linear_curve_w.write(
+        try std.fmt.bufPrint(
+            &buf,
+            BASIS_CURVE_TEMPLATE,
+            .{ rays.len * 2 , points.items },
+        ),
+    );
+
+    _ = try xform_w.write(try linear_curves.commit());
 
     _ = try parent_writer.write(try xform.commit());
 }
@@ -176,6 +279,42 @@ pub fn main(
             ),
         }
     }
+
+    const rays = try state.camera.rays_for_pixel(
+        allocator,
+        200,
+        200,
+    );
+
+    try write_rays(
+        allocator,
+        &world_writer,
+        rays,
+        "CameraRays",
+    );
+
+    try write_sphere(
+        allocator,
+        &world_writer,
+        .{
+            .name = "Camera",
+            .center_worldspace = state.camera.center,
+            .radius = 0.25,
+        },
+    );
+
+    try write_rays(
+        allocator,
+        &world_writer,
+        &.{
+            .{
+                .origin = state.camera.center,
+                .dir = state.camera.look_at.sub(state.camera.center),
+            },
+        },
+        "CameraLookat",
+    );
+
 
     _ = try file_writer.write(try world.commit());
 }
