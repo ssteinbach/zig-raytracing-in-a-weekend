@@ -5,8 +5,11 @@ const image = @import("image.zig");
 const vector = @import("vector.zig");
 const comath_wrapper = @import("comath_wrapper.zig");
 
-const render_functions = @import("render_functions.zig");
+pub const render_functions = @import("render_functions.zig");
 pub const RENDERERS = render_functions.RENDERERS;
+
+pub const geometry = @import("geometry.zig");
+pub const ray = @import("ray.zig");
 
 test
 {

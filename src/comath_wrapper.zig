@@ -141,3 +141,17 @@ test "method test"
 
     try std.testing.expectApproxEqAbs(2, result, 0.0001);
 }
+
+test "child access"
+{
+    const v = vector.V3f.init_3(1, 2, 3);
+
+    try std.testing.expectEqual(
+        v.x,
+        eval("v.x", .{ .v = v }),
+    );
+    try std.testing.expectEqual(
+        v.y,
+        eval("v.y", .{ .v = v }),
+    );
+}

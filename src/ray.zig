@@ -3,6 +3,8 @@
 const vector = @import("vector.zig");
 const comath_wrapper = @import("comath_wrapper.zig");
 
+const std = @import("std");
+
 /// A ray through the world, with origin and direction
 pub const Ray = struct {
     origin: vector.Point3f,
@@ -15,12 +17,21 @@ pub const Ray = struct {
     ) vector.Point3f
     {
         return comath_wrapper.eval(
-            "o + s * t",
-            .{
-                .o = self.origin,
-                .s = self.dir,
-                .t = t
-            },
+            "self.origin + self.dir * t",
+            .{ .self = self, .t = t },
+        );
+    }
+
+    pub fn format(
+        self: @This(),
+        comptime _: []const u8,
+        _: std.fmt.FormatOptions,
+        writer: anytype,
+    ) !void 
+    {
+        try writer.print(
+            "ray({s} -> {s})",
+            .{ self.origin, self.dir },
         );
     }
 };
