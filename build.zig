@@ -193,15 +193,7 @@ pub fn build(
         );
     }
 
-    {
-        executable(
-            b,
-            "viewer3d",
-            "src/viewer3d.zig",
-            state
-        );
-    }
-
+    // executable program that writes the scene to USD for debugging
     {
         executable(
             b,
