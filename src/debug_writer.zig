@@ -18,7 +18,9 @@ const BASIS_CURVE_TEMPLATE = \\
     \\ int[] curveVertexCounts = [{d}]
     \\ float[] widths = [1.5] (interpolation = "constant") 
     \\ color3f[] primvars:displayColor = [(1, 0, 0)]
-    \\ point3f[] points = [{s}]
+    \\ point3f[] points = [
+    \\ {s}
+    \\ ]
     \\
  ;
 
@@ -161,7 +163,7 @@ pub fn write_rays(
         _ = try p_w.write(
             try std.fmt.bufPrint(
                 &buf,
-                "({d}, {d}, {d}), ({d}, {d}, {d}), ",
+                "({d}, {d}, {d}), ({d}, {d}, {d}), \n",
                 .{
                     r.origin.x,
                     r.origin.y,
