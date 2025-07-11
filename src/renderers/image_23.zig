@@ -36,7 +36,7 @@ pub const RNDR = struct {
         defocus_disk_u: vector.V3f,
         defocus_disk_v: vector.V3f,
 
-        const samples_per_pixel:usize = 10;
+        const samples_per_pixel:usize = 50;
         const pixel_sample_scale:BaseType = (
             1.0/@as(BaseType, @floatFromInt(samples_per_pixel))
         );
@@ -332,7 +332,7 @@ pub const RNDR = struct {
 
             const threshold = vector.V3f.init_3(4, 0.2, 0);
 
-            var buf = std.mem.zeroes([1024]u8);
+            var buf = try allocator.alloc(u8, 10*1024);
 
             var a:BaseType = -11;
             while (a < 11)
@@ -343,12 +343,14 @@ pub const RNDR = struct {
                     : (b+=1)
                 {
                     const name = try std.fmt.bufPrint(
-                        &buf,
+                        buf,
                         "sphere_{d}_{d}",
-                        .{ a, b },
+                        .{ a + 12, b + 12 },
                     );
+                    buf = buf[name.len..];
+                    std.debug.print("name: {s}\n", .{ name });
 
-                    const choose_mat = utils.rnd_num(BaseType);
+                    const choose_mat = utils.rnd_num_range(BaseType, 0, 1);
                 
                     const center = vector.V3f {
                         .x = a + 0.9 * utils.rnd_num(BaseType), 
@@ -527,7 +529,7 @@ pub const RNDR = struct {
                     vector.Point3f.init_3(0,0,0),
                     vector.V3f.init_3(0, 1, 0),
                     20,
-                    0,
+                    0.6,
                     10,
                     img,
                 ),
