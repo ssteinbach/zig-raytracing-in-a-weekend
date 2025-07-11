@@ -126,6 +126,19 @@ pub const DielectricReflRefr = struct {
     albedo: vector.Color3f = vector.Color3f.init(0.2),
     refraction_index: vector.V3f.BaseType,
 
+    pub fn init(
+        albedo: vector.Color3f,
+        refraction_index: vector.V3f.BaseType,
+    ) Material
+    {
+        return .{
+            .dielectric_refl_refr = .{
+                .albedo = albedo,
+                .refraction_index = refraction_index,
+            },
+        };
+    }
+
     pub fn scatter(
         self: @This(),
         r_in: ray.Ray,

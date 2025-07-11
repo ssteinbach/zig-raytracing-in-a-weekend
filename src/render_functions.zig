@@ -45,6 +45,7 @@ pub const RENDERERS = [_]Renderer{
     Renderer.init(@import("renderers/image_20.zig").RNDR, "A distant view"),
     Renderer.init(@import("renderers/image_21.zig").RNDR, "Zooming in"),
     Renderer.init(img22.RNDR, "Spheres with depth-of-field"),
+    Renderer.init(@import("renderers/image_23.zig").RNDR, "Final scene"),
     // Renderer.init(@import("renderers/image_15.zig").RNDR, "Glass First"),
 };
 

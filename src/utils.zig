@@ -18,7 +18,7 @@ pub fn rnd_float_centered(
     return (rand.float(T) - 0.5);
 }
 
-// Random number / vector in [-0.5, 0.5]
+/// Random number / vector in [-0.5, 0.5]
 pub fn rnd_num(
     comptime T: type,
 ) T 
@@ -62,7 +62,7 @@ test "random number: [-0.5, 0.5)"
 
 }
 
-// Random number in [low_inclusive, high_exclusive)
+/// Random number in [low_inclusive, high_exclusive)
 pub fn rnd_num_range(
     comptime T: type,
     low_inclusive: T,
@@ -73,6 +73,32 @@ pub fn rnd_num_range(
         rand.float(T),
         low_inclusive,
         high_exclusive
+    );
+}
+
+// Random number in [low_inclusive, high_exclusive)
+pub fn rnd_vec_range(
+    comptime T: type,
+    low_inclusive: T.BaseType,
+    high_exclusive: T.BaseType,
+) T
+{
+    return T.init_3(
+        comath_wrapper.lerp(
+            rand.float(T.BaseType),
+            low_inclusive,
+            high_exclusive
+        ),
+        comath_wrapper.lerp(
+            rand.float(T.BaseType),
+            low_inclusive,
+            high_exclusive
+        ),
+        comath_wrapper.lerp(
+            rand.float(T.BaseType),
+            low_inclusive,
+            high_exclusive
+        )
     );
 }
 
