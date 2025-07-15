@@ -139,16 +139,19 @@ pub const RNDR = struct {
                 ) 
             ) |hitrec|
             {
-                if (hitrec.mat.*.scatter(r,hitrec))
-                    |scatter|
+                if (depth > 0) 
                 {
-                    return ray_color(
-                        scatter.scattered,
-                        depth - 1,
-                        world
-                    ).mul(scatter.attentuation);
+                    return (
+                        if (hitrec.mat.*.scatter(r,hitrec))
+                            |scatter| 
+                        ray_color(
+                            scatter.scattered,
+                            depth - 1,
+                            world
+                        ).mul(scatter.attentuation)
+                        else vector.Color3f.ZERO
+                    );
                 }
-                else return vector.Color3f.ZERO;
             }
 
             const a = 0.5 * (r.dir.unit_vector().y + 1.0);
