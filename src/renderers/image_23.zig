@@ -351,9 +351,12 @@ pub const RNDR = struct {
                         .{ a + 12, b + 12 },
                     );
                     buf = buf[name.len..];
-                    std.debug.print("name: {s}\n", .{ name });
 
-                    const choose_mat = utils.rnd_num_range(BaseType, 0, 1);
+                    const choose_mat = utils.rnd_num_range(
+                        BaseType,
+                        0,
+                        1,
+                    );
                 
                     const center = vector.V3f {
                         .x = a + 0.9 * utils.rnd_num(BaseType), 
@@ -392,7 +395,7 @@ pub const RNDR = struct {
                                         .name = name,
                                         .center_worldspace = center,
                                         .radius = 0.2,
-                                        .mat = mtl_map.getPtr(name).?
+                                        .mat = mtl_map.getPtr(name).?,
                                     },
                                 ),
                             );
@@ -420,6 +423,7 @@ pub const RNDR = struct {
                                     }
                                 },
                             );
+
                             try worldbuilder.append(
                                 ray_hit.Hittable.init(
                                     geometry.Sphere{
