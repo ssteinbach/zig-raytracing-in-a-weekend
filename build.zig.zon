@@ -5,8 +5,8 @@
     .minimum_zig_version = "0.14.0",
     .dependencies = .{
         .zgui_cimgui_implot_sokol = .{
-            .url = "git+https://github.com/ssteinbach/zgui_cimgui_implot_sokol.git#a77437180112938aa4a59b91d8c6ce3d5eff76f5",
-            .hash = "zgui_cimgui_implot_sokol-1.91.8-17SdXhLgBgBH3NzkCeVnVhrO-G2rx_wdYuSGBSn0D5iK",
+            .url = "git+https://github.com/ssteinbach/zgui_cimgui_implot_sokol.git#647932636ba272dc776879b342137aa2a085b6fb",
+            .hash = "zgui_cimgui_implot_sokol-1.91.8-17SdXoflBgAUbYnNiyHEl1-6GrG7EKyvLLum3sgMWpkP",
         },
         .comath = .{
             .url = "git+https://github.com/ssteinbach/comath.git#629293233421e58904995725f175844ae107f21d",
