@@ -21,3 +21,12 @@ zig buld test
 zig build viewer
 ```
 
+## Todo
+
+* [x] report % done
+* [ ] UI Pass
+* [ ] other books
+* [ ] temporal iterative refinement
+* [ ] multithread the renderer
+* [ ] performance heatmap AOV
+* [ ] reorganize UI into a menu
