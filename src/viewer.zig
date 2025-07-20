@@ -30,6 +30,7 @@ const STATE = struct {
     /// threading
     var render_thread : std.Thread = undefined;
     var render_thread_is_running= std.atomic.Value(bool).init(false);
+    var render_progress = std.atomic.Value(usize).init(0);
 
     // measuring
     var fps : f64 = 0;
@@ -169,10 +170,11 @@ fn draw(
             .{ STATE.mspf, STATE.fps, }
         );
         zgui.text(
-            "status: {s}: {d}",
+            "status: {s}: {d} ({d}%)",
             .{
                 render_status,
-                (try std.time.Instant.now()).since(STATE.render_start_t) / std.time.ns_per_ms
+                (try std.time.Instant.now()).since(STATE.render_start_t) / std.time.ns_per_ms,
+                STATE.render_progress.load(.monotonic),
             }
         );
 
@@ -370,6 +372,7 @@ fn render(
         &STATE.buffer,
         STATE.frame_number,
         STATE.current_renderer,
+        &STATE.render_progress,
     );
 
     const t_end = std.time.Instant.now() catch @panic("not supported");

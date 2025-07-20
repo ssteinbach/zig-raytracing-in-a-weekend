@@ -29,12 +29,14 @@ pub fn render(
     img: *Image_rgba_u8,
     frame_number: usize,
     current_renderer: usize,
+    progress: *std.atomic.Value(usize),
 ) void
 {
     render_functions.RENDERERS[current_renderer]._render(
         allocator,
         img,
-        frame_number
+        frame_number,
+        progress,
     );
 }
 

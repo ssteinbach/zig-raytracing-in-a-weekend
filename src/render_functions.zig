@@ -68,7 +68,8 @@ pub const Renderer = struct {
     _render : *const fn (
         allocator: std.mem.Allocator,
         img: *raytrace.Image_rgba_u8,
-        _: usize,
+        frame_number: usize,
+        progress: *std.atomic.Value(usize),
     ) void,
     _maybe_deinit: ?*const CLEANUPFNTYPE = null,
     /// description string
@@ -99,10 +100,13 @@ pub fn display_check(
     _: std.mem.Allocator,
     img: *raytrace.Image_rgba_u8,
     _: usize,
+    progress: *std.atomic.Value(usize),
 ) void
 {
     const cols = img.width;
     const rows = img.height;
+
+    progress.store(0, .monotonic);
 
     var x:usize = 0;
     while (x < cols)
@@ -139,6 +143,11 @@ pub fn display_check(
             pixel[2] = pixel_color.z;
             pixel[3] = 255;
         }
+
+        if (@mod(x, 20) == 0) 
+        {
+            progress.store(x * 100 / cols, .monotonic);
+        }
     }
 }
 
@@ -154,10 +163,13 @@ pub fn image_1(
     _: std.mem.Allocator,
     img: *raytrace.Image_rgba_u8,
     frame_number: usize,
+    progress: *std.atomic.Value(usize),
 ) void
 {
     const cols = img.width;
     const rows = img.height;
+
+    progress.store(0, .monotonic);
 
     const dim = vector.Color3f.init([_]usize{ cols, rows, 0});
 
@@ -182,6 +194,11 @@ pub fn image_1(
             pixel[1] = pixel_color.y;
             pixel[2] = 0;
             pixel[3] = 255;
+        }
+
+        if (@mod(x, 20) == 0) 
+        {
+            progress.store(x * 100 / cols, .monotonic);
         }
     }
 }
@@ -218,8 +235,11 @@ const image_2 = struct {
         _: std.mem.Allocator,
         img: *raytrace.Image_rgba_u8,
         _: usize,
+        progress: *std.atomic.Value(usize),
     ) void
     {
+        progress.store(0, .monotonic);
+
         const aspect_ratio:vector.V3f.BaseType = @floatFromInt(img.width / img.height);
         const image_width:usize = img.width;
 
@@ -307,6 +327,8 @@ const image_2 = struct {
                 pixel[2] = pixel_color.z;
                 pixel[3] = 255;
             }
+
+            progress.store(j*100/img.height, .monotonic);
         }
     }
 };
@@ -337,8 +359,11 @@ const image_3 = struct {
         _: std.mem.Allocator,
         img: *raytrace.Image_rgba_u8,
         _: usize,
+        progress: *std.atomic.Value(usize),
     ) void
     {
+        progress.store(0, .monotonic);
+
         const image_width:usize = img.width;
         const image_height:usize = img.height;
 
@@ -423,6 +448,8 @@ const image_3 = struct {
                 pixel[2] = pixel_color.z;
                 pixel[3] = 255;
             }
+
+            progress.store(j*100/img.height, .monotonic);
         }
     }
 };
@@ -484,8 +511,11 @@ const image_4 = struct {
         _: std.mem.Allocator,
         img: *raytrace.Image_rgba_u8,
         _: usize,
+        progress: *std.atomic.Value(usize),
     ) void
     {
+        progress.store(0, .monotonic);
+
         const image_width:usize = img.width;
         const image_height:usize = img.height;
 
@@ -570,6 +600,8 @@ const image_4 = struct {
                 pixel[2] = pixel_color.z;
                 pixel[3] = 255;
             }
+
+            progress.store(j*100/img.height, .monotonic);
         }
     }
 };
@@ -637,8 +669,11 @@ const image_5 = struct {
         allocator: std.mem.Allocator,
         img: *raytrace.Image_rgba_u8,
         _: usize,
+        progress: *std.atomic.Value(usize),
     ) void
     {
+        progress.store(0, .monotonic);
+
         // build the world
         var world = ray_hit.HittableList.init(allocator);
         defer world.deinit();
@@ -744,6 +779,8 @@ const image_5 = struct {
                 pixel[2] = pixel_color.z;
                 pixel[3] = 255;
             }
+
+            progress.store(j*100/img.height, .monotonic);
         }
     }
 };
@@ -887,8 +924,11 @@ const image_6 = struct {
             self: @This(),
             world: ray_hit.HittableSlice,
             img: *raytrace.Image_rgba_u8,
+            progress: *std.atomic.Value(usize),
         ) void
         {
+            progress.store(0, .monotonic);
+
             var j:usize = 0;
             while (j < self.image_height)
                 : (j+=1)
@@ -914,6 +954,7 @@ const image_6 = struct {
                     img.write_pixel(i,j, pixel_color.mul(pixel_sample_scale));
 
                 }
+                progress.store(j*100/self.image_height, .monotonic);
             }
 
         }
@@ -1002,9 +1043,10 @@ const image_6 = struct {
         pub fn render(
             self: @This(),
             img: *raytrace.Image_rgba_u8,
+            progress: *std.atomic.Value(usize),
         ) void
         {
-            self.camera.render(self.world, img);
+            self.camera.render(self.world, img, progress);
         }
 
         pub fn deinit(
@@ -1020,6 +1062,7 @@ const image_6 = struct {
         allocator: std.mem.Allocator,
         img: *raytrace.Image_rgba_u8,
         _: usize,
+        progress: *std.atomic.Value(usize),
     ) void
     {
         if (state == null)
@@ -1027,7 +1070,7 @@ const image_6 = struct {
             state = State.init(allocator, img);
         }
 
-        state.?.render(img);
+        state.?.render(img, progress);
     }
 
     pub fn init(
@@ -1163,8 +1206,11 @@ const image_7 = struct {
             self: @This(),
             world: ray_hit.HittableSlice,
             img: *raytrace.Image_rgba_u8,
+            progress: *std.atomic.Value(usize),
         ) void
         {
+            progress.store(0, .monotonic);
+
             var j:usize = 0;
             while (j < self.image_height)
                 : (j+=1)
@@ -1194,6 +1240,7 @@ const image_7 = struct {
                     img.write_pixel(i,j, pixel_color.mul(pixel_sample_scale));
 
                 }
+                progress.store(j*100/self.image_height, .monotonic);
             }
 
         }
@@ -1282,9 +1329,10 @@ const image_7 = struct {
         pub fn render(
             self: @This(),
             img: *raytrace.Image_rgba_u8,
+            progress: *std.atomic.Value(usize),
         ) void
         {
-            self.camera.render(self.world, img);
+            self.camera.render(self.world, img, progress);
         }
 
         pub fn deinit(
@@ -1300,6 +1348,7 @@ const image_7 = struct {
         allocator: std.mem.Allocator,
         img: *raytrace.Image_rgba_u8,
         _: usize,
+        progress: *std.atomic.Value(usize),
     ) void
     {
         if (state == null)
@@ -1307,7 +1356,7 @@ const image_7 = struct {
             state = State.init(allocator, img);
         }
 
-        state.?.render(img);
+        state.?.render(img, progress);
     }
 
     pub fn init(
@@ -1453,8 +1502,11 @@ const image_8 = struct {
             self: @This(),
             world: ray_hit.HittableSlice,
             img: *raytrace.Image_rgba_u8,
+            progress: *std.atomic.Value(usize),
         ) void
         {
+            progress.store(0, .monotonic);
+
             var j:usize = 0;
             while (j < self.image_height)
                 : (j+=1)
@@ -1485,6 +1537,7 @@ const image_8 = struct {
                     img.write_pixel(i,j, pixel_color.mul(pixel_sample_scale));
 
                 }
+                progress.store(j*100/self.image_height, .monotonic);
             }
 
         }
@@ -1573,9 +1626,10 @@ const image_8 = struct {
         pub fn render(
             self: @This(),
             img: *raytrace.Image_rgba_u8,
+            progress: *std.atomic.Value(usize),
         ) void
         {
-            self.camera.render(self.world, img);
+            self.camera.render(self.world, img, progress);
         }
 
         pub fn deinit(
@@ -1591,6 +1645,7 @@ const image_8 = struct {
         allocator: std.mem.Allocator,
         img: *raytrace.Image_rgba_u8,
         _: usize,
+        progress: *std.atomic.Value(usize),
     ) void
     {
         if (state == null)
@@ -1598,7 +1653,7 @@ const image_8 = struct {
             state = State.init(allocator, img);
         }
 
-        state.?.render(img);
+        state.?.render(img, progress);
     }
 
     pub fn init(
@@ -1744,8 +1799,11 @@ const image_9 = struct {
             self: @This(),
             world: ray_hit.HittableSlice,
             img: *raytrace.Image_rgba_u8,
+            progress: *std.atomic.Value(usize),
         ) void
         {
+            progress.store(0, .monotonic);
+
             var j:usize = 0;
             while (j < self.image_height)
                 : (j+=1)
@@ -1776,6 +1834,7 @@ const image_9 = struct {
                     img.write_pixel(i,j, pixel_color.mul(pixel_sample_scale));
 
                 }
+                progress.store(j*100/self.image_height, .monotonic);
             }
 
         }
@@ -1864,9 +1923,10 @@ const image_9 = struct {
         pub fn render(
             self: @This(),
             img: *raytrace.Image_rgba_u8,
+            progress: *std.atomic.Value(usize),
         ) void
         {
-            self.camera.render(self.world, img);
+            self.camera.render(self.world, img, progress);
         }
 
         pub fn deinit(
@@ -1882,6 +1942,7 @@ const image_9 = struct {
         allocator: std.mem.Allocator,
         img: *raytrace.Image_rgba_u8,
         _: usize,
+        progress: *std.atomic.Value(usize),
     ) void
     {
         if (state == null)
@@ -1889,7 +1950,7 @@ const image_9 = struct {
             state = State.init(allocator, img);
         }
 
-        state.?.render(img);
+        state.?.render(img, progress);
     }
 
     pub fn init(
@@ -2035,8 +2096,11 @@ const image_10 = struct {
             self: @This(),
             world: ray_hit.HittableSlice,
             img: *raytrace.Image_rgba_u8,
+            progress: *std.atomic.Value(usize),
         ) void
         {
+            progress.store(0, .monotonic);
+
             var j:usize = 0;
             while (j < self.image_height)
                 : (j+=1)
@@ -2067,6 +2131,7 @@ const image_10 = struct {
                     img.write_pixel(i,j, pixel_color.mul(pixel_sample_scale));
 
                 }
+                progress.store(j*100/self.image_height, .monotonic);
             }
 
         }
@@ -2155,9 +2220,10 @@ const image_10 = struct {
         pub fn render(
             self: @This(),
             img: *raytrace.Image_rgba_u8,
+            progress: *std.atomic.Value(usize),
         ) void
         {
-            self.camera.render(self.world, img);
+            self.camera.render(self.world, img, progress);
         }
 
         pub fn deinit(
@@ -2173,6 +2239,7 @@ const image_10 = struct {
         allocator: std.mem.Allocator,
         img: *raytrace.Image_rgba_u8,
         _: usize,
+        progress: *std.atomic.Value(usize),
     ) void
     {
         if (state == null)
@@ -2180,7 +2247,7 @@ const image_10 = struct {
             state = State.init(allocator, img);
         }
 
-        state.?.render(img);
+        state.?.render(img, progress);
     }
 
     pub fn init(

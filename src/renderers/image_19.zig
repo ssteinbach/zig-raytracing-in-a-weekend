@@ -146,8 +146,10 @@ pub const RNDR = struct {
             self: @This(),
             world: ray_hit.HittableSlice,
             img: *raytrace.Image_rgba_u8,
+            progress: *std.atomic.Value(usize),
         ) void
         {
+            progress.store(0, .monotonic);
             var j:usize = 0;
             while (j < self.image_height)
                 : (j+=1)
@@ -182,8 +184,11 @@ pub const RNDR = struct {
                     );
 
                 }
+                progress.store(
+                    j * 100 / self.image_height,
+                    .monotonic,
+                );
             }
-
         }
 
         /// build a ray that leaves the given pixel
@@ -316,9 +321,10 @@ pub const RNDR = struct {
         pub fn render(
             self: @This(),
             img: *raytrace.Image_rgba_u8,
+            progress: *std.atomic.Value(usize),
         ) void
         {
-            self.camera.render(self.world, img);
+            self.camera.render(self.world, img, progress);
         }
 
         pub fn deinit(
@@ -334,6 +340,7 @@ pub const RNDR = struct {
         allocator: std.mem.Allocator,
         img: *raytrace.Image_rgba_u8,
         _: usize,
+        progress: *std.atomic.Value(usize),
     ) void
     {
         if (state == null)
@@ -341,7 +348,7 @@ pub const RNDR = struct {
             state = State.init(allocator, img);
         }
 
-        state.?.render(img);
+        state.?.render(img, progress);
     }
 
     pub fn init(

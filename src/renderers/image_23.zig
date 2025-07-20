@@ -1,5 +1,6 @@
 const std = @import("std");
 
+
 const render_functions = @import("../render_functions.zig");
 
 const raytrace = @import("../root.zig");
@@ -36,7 +37,7 @@ pub const RNDR = struct {
         defocus_disk_u: vector.V3f,
         defocus_disk_v: vector.V3f,
 
-        const samples_per_pixel:usize = 50;
+        const samples_per_pixel:usize = 1;
         const pixel_sample_scale:BaseType = (
             1.0/@as(BaseType, @floatFromInt(samples_per_pixel))
         );
@@ -169,8 +170,10 @@ pub const RNDR = struct {
             self: @This(),
             world: ray_hit.HittableSlice,
             img: *raytrace.Image_rgba_u8,
+            progress: *std.atomic.Value(usize),
         ) void
         {
+            progress.store(0, .monotonic);
             var j:usize = 0;
             while (j < self.image_height)
                 : (j+=1)
@@ -187,7 +190,7 @@ pub const RNDR = struct {
                     {
                         const r = self.get_ray(
                             @floatFromInt(i),
-                            @floatFromInt(j)
+                            @floatFromInt(j),
                         );
 
                         // scale and convert to output pixel foormat
@@ -205,8 +208,11 @@ pub const RNDR = struct {
                     );
 
                 }
+                progress.store(
+                    j * 100 / self.image_height,
+                    .monotonic,
+                );
             }
-
         }
 
         pub fn rays_for_pixel(
@@ -553,9 +559,10 @@ pub const RNDR = struct {
         pub fn render(
             self: @This(),
             img: *raytrace.Image_rgba_u8,
+            progress: *std.atomic.Value(usize),
         ) void
         {
-            self.camera.render(self.world, img);
+            self.camera.render(self.world, img, progress);
         }
 
         pub fn deinit(
@@ -571,6 +578,7 @@ pub const RNDR = struct {
         allocator: std.mem.Allocator,
         img: *raytrace.Image_rgba_u8,
         _: usize,
+        progress: *std.atomic.Value(usize),
     ) void
     {
         if (state == null)
@@ -578,7 +586,7 @@ pub const RNDR = struct {
             state = State.init(allocator, img);
         }
 
-        state.?.render(img);
+        state.?.render(img, progress);
     }
 
     pub fn init(
