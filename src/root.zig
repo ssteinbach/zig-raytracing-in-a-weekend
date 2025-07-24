@@ -23,20 +23,28 @@ test
 
 pub const Image_rgba_u8 = image.Image(4, u8);
 
+/// context for the renderer to operate in
+pub const RenderContext = struct {
+    /// image buffer to render into
+    img: *Image_rgba_u8,
+    /// variable parameter for stuff
+    frame_number: usize,
+    /// progress atomic value
+    progress: *std.atomic.Value(usize),
+};
+
 /// default render function calls the last render function in the list
 pub fn render(
     allocator: std.mem.Allocator,
-    img: *Image_rgba_u8,
-    frame_number: usize,
     current_renderer: usize,
-    progress: *std.atomic.Value(usize),
+    context: RenderContext,
 ) void
 {
     render_functions.RENDERERS[current_renderer]._render(
         allocator,
-        img,
-        frame_number,
-        progress,
+        context.img,
+        context.frame_number,
+        context.progress,
     );
 }
 

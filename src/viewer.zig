@@ -376,10 +376,12 @@ fn render(
 
     raytrace.render(
         allocator,
-        &STATE.buffer,
-        STATE.frame_number,
         STATE.current_renderer,
-        &STATE.render_progress,
+        .{ 
+            .img = &STATE.buffer,
+            .frame_number = STATE.frame_number,
+            .progress = &STATE.render_progress,
+        },
     );
 
     const t_end = std.time.Instant.now() catch @panic("not supported");
