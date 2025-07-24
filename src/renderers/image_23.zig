@@ -206,7 +206,6 @@ pub const RNDR = struct {
                         j,
                         pixel_color.mul(pixel_sample_scale)
                     );
-
                 }
                 progress.store(
                     j * 100 / self.image_height,

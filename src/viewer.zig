@@ -177,7 +177,10 @@ fn draw(
             "status: {s}: {d} ({d}%)",
             .{
                 render_status,
-                (try std.time.Instant.now()).since(STATE.render_start_t) / std.time.ns_per_ms,
+                (
+                 (try std.time.Instant.now()).since(STATE.render_start_t) 
+                 / std.time.ns_per_ms
+                ),
                 STATE.render_progress.load(.monotonic),
             }
         );
