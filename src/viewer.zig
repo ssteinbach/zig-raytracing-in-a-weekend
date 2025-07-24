@@ -155,7 +155,11 @@ fn draw(
                     )
                 )
                 {
-                    STATE.current_renderer = ind;
+                    if (STATE.current_renderer != ind) {
+                        STATE.current_renderer = ind;
+                        
+                        // @TODO: Also cancel the render and start a new one
+                    }
                 }
 
                 if (is_selected)
