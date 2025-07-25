@@ -172,7 +172,7 @@ pub const RNDR = struct {
             context: raytrace.RenderContext,
         ) void
         {
-            context.progress.store(0, .monotonic);
+            context.progress.store(0, .unordered);
             var j:usize = 0;
             while (j < self.image_height)
                 : (j+=1)
@@ -208,7 +208,7 @@ pub const RNDR = struct {
                 }
                 context.progress.store(
                     j * 100 / self.image_height,
-                    .monotonic,
+                    .unordered,
                 );
             }
         }

@@ -181,7 +181,7 @@ fn draw(
                  (try std.time.Instant.now()).since(STATE.render_start_t) 
                  / std.time.ns_per_ms
                 ),
-                STATE.render_progress.load(.monotonic),
+                STATE.render_progress.load(.unordered),
             }
         );
 
