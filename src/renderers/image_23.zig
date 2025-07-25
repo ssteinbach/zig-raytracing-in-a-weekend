@@ -169,11 +169,10 @@ pub const RNDR = struct {
         pub fn render(
             self: @This(),
             world: ray_hit.HittableSlice,
-            img: *raytrace.Image_rgba_u8,
-            progress: *std.atomic.Value(usize),
+            context: raytrace.RenderContext,
         ) void
         {
-            progress.store(0, .monotonic);
+            context.progress.store(0, .monotonic);
             var j:usize = 0;
             while (j < self.image_height)
                 : (j+=1)
@@ -201,13 +200,13 @@ pub const RNDR = struct {
                             )
                         );
                     }
-                    img.write_pixel_corrected(
+                    context.img.write_pixel_corrected(
                         i,
                         j,
                         pixel_color.mul(pixel_sample_scale)
                     );
                 }
-                progress.store(
+                context.progress.store(
                     j * 100 / self.image_height,
                     .monotonic,
                 );
@@ -555,15 +554,6 @@ pub const RNDR = struct {
              return state.?;
         }
 
-        pub fn render(
-            self: @This(),
-            img: *raytrace.Image_rgba_u8,
-            progress: *std.atomic.Value(usize),
-        ) void
-        {
-            self.camera.render(self.world, img, progress);
-        }
-
         pub fn deinit(
             self: @This(),
         ) void
@@ -580,7 +570,10 @@ pub const RNDR = struct {
     {
         state = state orelse State.init(allocator, context.img);
 
-        state.?.render(context.img, context.progress);
+        state.?.camera.render(
+            state.?.world,
+            context,
+        );
     }
 
     pub fn init(
