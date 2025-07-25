@@ -193,7 +193,8 @@ pub const RNDR = struct {
                         );
 
                         // scale and convert to output pixel foormat
-                        pixel_color = pixel_color.add(ray_color(
+                        pixel_color = pixel_color.add(
+                            ray_color(
                                 r,
                                 max_depth,
                                 world,
