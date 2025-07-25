@@ -382,17 +382,15 @@ pub const RNDR = struct {
 
     pub fn render(
         allocator: std.mem.Allocator,
-        img: *raytrace.Image_rgba_u8,
-        _: usize,
-        progress: *std.atomic.Value(usize),
+        context: raytrace.RenderContext,
     ) void
     {
         if (state == null)
         {
-            state = State.init(allocator, img);
+            state = State.init(allocator, context.img);
         }
 
-        state.?.render(img, progress);
+        state.?.render(context.img, context.progress);
     }
 
     pub fn init(

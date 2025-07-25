@@ -67,9 +67,7 @@ pub const Renderer = struct {
     _maybe_init: ?*const INITFN_TYPE = null,
     _render : *const fn (
         allocator: std.mem.Allocator,
-        img: *raytrace.Image_rgba_u8,
-        frame_number: usize,
-        progress: *std.atomic.Value(usize),
+        context: raytrace.RenderContext,
     ) void,
     _maybe_deinit: ?*const CLEANUPFNTYPE = null,
     /// description string
@@ -98,15 +96,13 @@ pub const Renderer = struct {
 
 pub fn display_check(
     _: std.mem.Allocator,
-    img: *raytrace.Image_rgba_u8,
-    _: usize,
-    progress: *std.atomic.Value(usize),
+    context: raytrace.RenderContext,
 ) void
 {
-    const cols = img.width;
-    const rows = img.height;
+    const cols = context.img.width;
+    const rows = context.img.height;
 
-    progress.store(0, .monotonic);
+    context.progress.store(0, .monotonic);
 
     var x:usize = 0;
     while (x < cols)
@@ -136,7 +132,7 @@ pub fn display_check(
 
             const pixel_color = pixel_color_f.mul(255.999).as(u8);
 
-            var pixel = img.pixel(x, y);
+            var pixel = context.img.pixel(x, y);
 
             pixel[0] = pixel_color.x;
             pixel[1] = pixel_color.y;
@@ -146,7 +142,7 @@ pub fn display_check(
 
         if (@mod(x, 20) == 0) 
         {
-            progress.store(x * 100 / cols, .monotonic);
+            context.progress.store(x * 100 / cols, .monotonic);
         }
     }
 }
@@ -161,15 +157,13 @@ pub fn display_check(
 /// The render functions are named after name of the figures in the book
 pub fn image_1(
     _: std.mem.Allocator,
-    img: *raytrace.Image_rgba_u8,
-    frame_number: usize,
-    progress: *std.atomic.Value(usize),
+    context: raytrace.RenderContext,
 ) void
 {
-    const cols = img.width;
-    const rows = img.height;
+    const cols = context.img.width;
+    const rows = context.img.height;
 
-    progress.store(0, .monotonic);
+    context.progress.store(0, .monotonic);
 
     const dim = vector.Color3f.init([_]usize{ cols, rows, 0});
 
@@ -183,12 +177,12 @@ pub fn image_1(
         {
             var pixel_color_f = comath_wrapper.eval(
                 "(((v2(x,y) + f) % dim) / (dim - 1)) * 255.999",
-                .{ .x = x, .y = y, .f = frame_number, .dim = dim, },
+                .{ .x = x, .y = y, .f = context.frame_number, .dim = dim, },
             );
             pixel_color_f.z = 0;
             const pixel_color = pixel_color_f.as(u8);
 
-            var pixel = img.pixel(x, y);
+            var pixel = context.img.pixel(x, y);
 
             pixel[0] = pixel_color.x;
             pixel[1] = pixel_color.y;
@@ -198,7 +192,7 @@ pub fn image_1(
 
         if (@mod(x, 20) == 0) 
         {
-            progress.store(x * 100 / cols, .monotonic);
+            context.progress.store(x * 100 / cols, .monotonic);
         }
     }
 }
@@ -233,15 +227,13 @@ const image_2 = struct {
 
     pub fn render(
         _: std.mem.Allocator,
-        img: *raytrace.Image_rgba_u8,
-        _: usize,
-        progress: *std.atomic.Value(usize),
+        context: raytrace.RenderContext,
     ) void
     {
-        progress.store(0, .monotonic);
+        context.progress.store(0, .monotonic);
 
-        const aspect_ratio:vector.V3f.BaseType = @floatFromInt(img.width / img.height);
-        const image_width:usize = img.width;
+        const aspect_ratio:vector.V3f.BaseType = @floatFromInt(context.img.width / context.img.height);
+        const image_width:usize = context.img.width;
 
         const image_height:usize = @intFromFloat(
             @max(1.0, @as(BaseType, @floatFromInt(image_width)) / aspect_ratio)
@@ -294,11 +286,11 @@ const image_2 = struct {
         );
 
         var j:usize = 0;
-        while (j < img.height)
+        while (j < context.img.height)
             : (j+=1)
         {
             var i:usize = 0;
-            while (i < img.width)
+            while (i < context.img.width)
                 : (i+=1)
             {
                 const pixel_center = comath_wrapper.eval(
@@ -320,7 +312,7 @@ const image_2 = struct {
                 // scale and convert to output pixel format
                 const pixel_color = ray_color(r).mul(255.999).as(u8);
 
-                var pixel = img.pixel(i, j);
+                var pixel = context.img.pixel(i, j);
 
                 pixel[0] = pixel_color.x;
                 pixel[1] = pixel_color.y;
@@ -328,7 +320,7 @@ const image_2 = struct {
                 pixel[3] = 255;
             }
 
-            progress.store(j*100/img.height, .monotonic);
+            context.progress.store(j*100/context.img.height, .monotonic);
         }
     }
 };
@@ -357,15 +349,13 @@ const image_3 = struct {
 
     pub fn render(
         _: std.mem.Allocator,
-        img: *raytrace.Image_rgba_u8,
-        _: usize,
-        progress: *std.atomic.Value(usize),
+        context: raytrace.RenderContext,
     ) void
     {
-        progress.store(0, .monotonic);
+        context.progress.store(0, .monotonic);
 
-        const image_width:usize = img.width;
-        const image_height:usize = img.height;
+        const image_width:usize = context.img.width;
+        const image_height:usize = context.img.height;
 
         const viewport_height : BaseType = 2.0;
         const viewport_width : BaseType = (
@@ -441,7 +431,7 @@ const image_3 = struct {
                 // scale and convert to output pixel format
                 const pixel_color = ray_color(r).mul(255.999).as(u8);
 
-                var pixel = img.pixel(i, j);
+                var pixel = context.img.pixel(i, j);
 
                 pixel[0] = pixel_color.x;
                 pixel[1] = pixel_color.y;
@@ -449,7 +439,7 @@ const image_3 = struct {
                 pixel[3] = 255;
             }
 
-            progress.store(j*100/img.height, .monotonic);
+            context.progress.store(j*100/context.img.height, .monotonic);
         }
     }
 };
@@ -509,15 +499,13 @@ const image_4 = struct {
 
     pub fn render(
         _: std.mem.Allocator,
-        img: *raytrace.Image_rgba_u8,
-        _: usize,
-        progress: *std.atomic.Value(usize),
+        context: raytrace.RenderContext,
     ) void
     {
-        progress.store(0, .monotonic);
+        context.progress.store(0, .monotonic);
 
-        const image_width:usize = img.width;
-        const image_height:usize = img.height;
+        const image_width:usize = context.img.width;
+        const image_height:usize = context.img.height;
 
         const viewport_height : BaseType = 2.0;
         const viewport_width : BaseType = (
@@ -593,7 +581,7 @@ const image_4 = struct {
                 // scale and convert to output pixel format
                 const pixel_color = ray_color(r).mul(255.999).as(u8);
 
-                var pixel = img.pixel(i, j);
+                var pixel = context.img.pixel(i, j);
 
                 pixel[0] = pixel_color.x;
                 pixel[1] = pixel_color.y;
@@ -601,7 +589,7 @@ const image_4 = struct {
                 pixel[3] = 255;
             }
 
-            progress.store(j*100/img.height, .monotonic);
+            context.progress.store(j*100/context.img.height, .monotonic);
         }
     }
 };
@@ -667,12 +655,10 @@ const image_5 = struct {
 
     pub fn render(
         allocator: std.mem.Allocator,
-        img: *raytrace.Image_rgba_u8,
-        _: usize,
-        progress: *std.atomic.Value(usize),
+        context: raytrace.RenderContext,
     ) void
     {
-        progress.store(0, .monotonic);
+        context.progress.store(0, .monotonic);
 
         // build the world
         var world = ray_hit.HittableList.init(allocator);
@@ -695,8 +681,8 @@ const image_5 = struct {
             )
         ) catch @panic("OOM!");
 
-        const image_width:usize = img.width;
-        const image_height:usize = img.height;
+        const image_width:usize = context.img.width;
+        const image_height:usize = context.img.height;
 
         const viewport_height : BaseType = 2.0;
         const viewport_width : BaseType = (
@@ -772,7 +758,7 @@ const image_5 = struct {
                 // scale and convert to output pixel format
                 const pixel_color = ray_color(r, world).mul(255.999).as(u8);
 
-                var pixel = img.pixel(i, j);
+                var pixel = context.img.pixel(i, j);
 
                 pixel[0] = pixel_color.x;
                 pixel[1] = pixel_color.y;
@@ -780,7 +766,7 @@ const image_5 = struct {
                 pixel[3] = 255;
             }
 
-            progress.store(j*100/img.height, .monotonic);
+            context.progress.store(j*100/context.img.height, .monotonic);
         }
     }
 };
@@ -1060,17 +1046,15 @@ const image_6 = struct {
 
     pub fn render(
         allocator: std.mem.Allocator,
-        img: *raytrace.Image_rgba_u8,
-        _: usize,
-        progress: *std.atomic.Value(usize),
+        context: raytrace.RenderContext,
     ) void
     {
         if (state == null)
         {
-            state = State.init(allocator, img);
+            state = State.init(allocator, context.img);
         }
 
-        state.?.render(img, progress);
+        state.?.render(context.img, context.progress);
     }
 
     pub fn init(
@@ -1346,17 +1330,15 @@ const image_7 = struct {
 
     pub fn render(
         allocator: std.mem.Allocator,
-        img: *raytrace.Image_rgba_u8,
-        _: usize,
-        progress: *std.atomic.Value(usize),
+        context: raytrace.RenderContext,
     ) void
     {
         if (state == null)
         {
-            state = State.init(allocator, img);
+            state = State.init(allocator, context.img);
         }
 
-        state.?.render(img, progress);
+        state.?.render(context.img, context.progress);
     }
 
     pub fn init(
@@ -1643,17 +1625,15 @@ const image_8 = struct {
 
     pub fn render(
         allocator: std.mem.Allocator,
-        img: *raytrace.Image_rgba_u8,
-        _: usize,
-        progress: *std.atomic.Value(usize),
+        context: raytrace.RenderContext,
     ) void
     {
         if (state == null)
         {
-            state = State.init(allocator, img);
+            state = State.init(allocator, context.img);
         }
 
-        state.?.render(img, progress);
+        state.?.render(context.img, context.progress);
     }
 
     pub fn init(
@@ -1940,17 +1920,15 @@ const image_9 = struct {
 
     pub fn render(
         allocator: std.mem.Allocator,
-        img: *raytrace.Image_rgba_u8,
-        _: usize,
-        progress: *std.atomic.Value(usize),
+        context: raytrace.RenderContext,
     ) void
     {
         if (state == null)
         {
-            state = State.init(allocator, img);
+            state = State.init(allocator, context.img);
         }
 
-        state.?.render(img, progress);
+        state.?.render(context.img, context.progress);
     }
 
     pub fn init(
@@ -2237,17 +2215,15 @@ const image_10 = struct {
 
     pub fn render(
         allocator: std.mem.Allocator,
-        img: *raytrace.Image_rgba_u8,
-        _: usize,
-        progress: *std.atomic.Value(usize),
+        context: raytrace.RenderContext,
     ) void
     {
         if (state == null)
         {
-            state = State.init(allocator, img);
+            state = State.init(allocator, context.img);
         }
 
-        state.?.render(img, progress);
+        state.?.render(context.img, context.progress);
     }
 
     pub fn init(

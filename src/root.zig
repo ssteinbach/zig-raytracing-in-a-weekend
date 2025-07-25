@@ -42,9 +42,7 @@ pub fn render(
 {
     render_functions.RENDERERS[current_renderer]._render(
         allocator,
-        context.img,
-        context.frame_number,
-        context.progress,
+        context,
     );
 }
 
