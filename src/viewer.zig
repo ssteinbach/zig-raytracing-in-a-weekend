@@ -1,4 +1,4 @@
-//! example app using the app wrapper
+//! Raytracing in a Weekend viewer app w/ ZIIS
 
 const std = @import("std");
 const builtin = @import("builtin");
@@ -18,25 +18,28 @@ const STATE = struct {
     var backup_f: f32 = 0;
     var demo_window_gui = false;
     var demo_window_plot = false;
-    const TEX_DIM : [2]i32 = .{ 400, 225 };
-    const COLOR_CHANNELS:usize = 4;
+    const TEX_DIM: [2]i32 = .{ 400, 225 };
+    const COLOR_CHANNELS: usize = 4;
     var tex: sg.Image = .{};
     var texid: u64 = 0;
     var frame_number: usize = 0;
-    var buffer : raytrace.Image_rgba_u8 = undefined;
-    var journal : ?ziis.undo.Journal = null;
+    var buffer: raytrace.Image_rgba_u8 = undefined;
+    var journal: ?ziis.undo.Journal = null;
     var current_renderer: usize = raytrace.RENDERERS.len - 1;
 
     /// threading
-    var render_thread : std.Thread = undefined;
-    var render_thread_is_running= std.atomic.Value(bool).init(false);
+    var render_thread: std.Thread = undefined;
+    var render_thread_is_running = std.atomic.Value(bool).init(false);
     var render_progress = std.atomic.Value(usize).init(0);
+    var execution_mode = std.atomic.Value(
+        raytrace.RequestedExecutionMode,
+    ).init(.stop);
 
     // measuring
-    var fps : f64 = 0;
-    var mspf : f64 = 0;
-    var render_start_t : std.time.Instant = undefined;
-    var start_program_t : std.time.Instant = undefined;
+    var fps: f64 = 0;
+    var mspf: f64 = 0;
+    var render_start_t: std.time.Instant = undefined;
+    var start_program_t: std.time.Instant = undefined;
 };
 
 const IS_WASM = builtin.target.cpu.arch.isWasm();
@@ -51,7 +54,7 @@ const backing_allocator = (
     else gpa.allocator()
 );
 var single_threaded_arena = std.heap.ArenaAllocator.init(
-    backing_allocator
+    backing_allocator,
 );
 const allocator = single_threaded_arena.allocator();
 
