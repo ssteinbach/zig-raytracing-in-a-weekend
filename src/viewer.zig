@@ -34,6 +34,7 @@ const STATE = struct {
     var execution_mode = std.atomic.Value(
         raytrace.RequestedExecutionMode,
     ).init(.stop);
+    var user_execution_mode: raytrace.RequestedExecutionMode = .render;
 
     // measuring
     var fps: f64 = 0;
@@ -83,10 +84,13 @@ fn draw(
 
     STATE.frame_number = @intFromFloat(@abs(STATE.f));
 
-    var render_status:[]const u8 = "RENDERING";
+    var render_status:[]const u8 = @tagName(STATE.user_execution_mode);
     var buffer : [128:0]u8 = undefined;
 
-    if (STATE.render_thread_is_running.load(.monotonic) == false) 
+    if (
+        STATE.render_thread_is_running.load(.monotonic) == false
+        and STATE.user_execution_mode == .render
+    )
     {
         STATE.render_thread.join();
 
@@ -158,16 +162,31 @@ fn draw(
                     )
                 )
                 {
-                    if (STATE.current_renderer != ind) {
+                    if (STATE.current_renderer != ind) 
+                    {
                         STATE.current_renderer = ind;
-                        
-                        // @TODO: Also cancel the render and start a new one
+                        STATE.execution_mode.store( .stop, .unordered,);
                     }
                 }
 
                 if (is_selected)
                 {
                     zgui.setItemDefaultFocus();
+                }
+            }
+        }
+
+        {
+            if (
+                zgui.comboFromEnum(
+                    "Execution Mode",
+                    &STATE.user_execution_mode,
+                )
+            )
+            {
+                if (STATE.user_execution_mode == .stop)
+                {
+                    STATE.execution_mode.store(.stop, .unordered);
                 }
             }
         }
@@ -180,10 +199,11 @@ fn draw(
             "status: {s}: {d} ({d}%)",
             .{
                 render_status,
-                (
+                if (STATE.user_execution_mode == .render) (
                  (try std.time.Instant.now()).since(STATE.render_start_t) 
                  / std.time.ns_per_ms
-                ),
+                )
+                else 0,
                 STATE.render_progress.load(.unordered),
             }
         );
@@ -376,6 +396,7 @@ fn render(
     STATE.render_thread_is_running.store(true, .monotonic);
     const t_start = std.time.Instant.now() catch @panic("not supported");
     STATE.render_start_t = t_start;
+    STATE.execution_mode.store(.render, .monotonic);
 
     raytrace.render(
         allocator,
@@ -384,6 +405,7 @@ fn render(
             .img = &STATE.buffer,
             .frame_number = STATE.frame_number,
             .progress = &STATE.render_progress,
+            .requested_execution_mode = &STATE.execution_mode,
         },
     );
 

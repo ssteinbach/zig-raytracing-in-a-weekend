@@ -23,6 +23,13 @@ test
 
 pub const Image_rgba_u8 = image.Image(4, u8);
 
+/// execution mode indicator enum for the renderer
+pub const RequestedExecutionMode = enum (i8) {
+    stop,
+    render,
+    // pause when done?
+};
+
 /// context for the renderer to operate in
 pub const RenderContext = struct {
     /// image buffer to render into
@@ -31,6 +38,8 @@ pub const RenderContext = struct {
     frame_number: usize,
     /// progress atomic value
     progress: *std.atomic.Value(usize),
+    /// Control signal for the ui to tell the renderer to continue, cancel, etc.
+    requested_execution_mode: *std.atomic.Value(RequestedExecutionMode),
 };
 
 /// default render function calls the last render function in the list

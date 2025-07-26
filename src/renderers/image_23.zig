@@ -174,7 +174,10 @@ pub const RNDR = struct {
         {
             context.progress.store(0, .unordered);
             var j:usize = 0;
-            while (j < self.image_height)
+            var exec_mode = (
+                context.requested_execution_mode.load(.unordered)
+            );
+            while (j < self.image_height and exec_mode != .stop)
                 : (j+=1)
             {
                 var i:usize = 0;
@@ -184,7 +187,7 @@ pub const RNDR = struct {
                     var pixel_color = vector.Color3f.init(0);
 
                     var sample: usize = 0;
-                    while (sample < samples_per_pixel)
+                    while (sample < samples_per_pixel and exec_mode != .stop)
                         : (sample += 1)
                     {
                         const r = self.get_ray(
@@ -200,17 +203,24 @@ pub const RNDR = struct {
                                 world,
                             )
                         );
+
+                        exec_mode = context.requested_execution_mode.load(
+                            .unordered,
+                        );
                     }
                     context.img.write_pixel_corrected(
                         i,
                         j,
-                        pixel_color.mul(pixel_sample_scale)
+                        pixel_color.mul(pixel_sample_scale),
                     );
                 }
-                context.progress.store(
-                    j * 100 / self.image_height,
-                    .unordered,
-                );
+                if (exec_mode != .stop)
+                {
+                    context.progress.store(
+                        j * 100 / self.image_height,
+                        .unordered,
+                    );
+                }
             }
         }
 

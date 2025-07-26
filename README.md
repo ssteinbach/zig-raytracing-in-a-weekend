@@ -24,6 +24,7 @@ zig build viewer
 ## Todo
 
 * [x] report % done
+* [x] cancel ongoing render when changing renderers
 * [ ] UI Pass
 * [ ] other books
 * [ ] temporal iterative refinement
