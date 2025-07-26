@@ -25,6 +25,7 @@ zig build viewer
 
 * [x] report % done
 * [x] cancel ongoing render when changing renderers
+* [x] why debug mode have no shaders
 * [ ] UI Pass
 * [ ] other books
 * [ ] temporal iterative refinement
