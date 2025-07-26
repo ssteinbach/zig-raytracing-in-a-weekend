@@ -127,11 +127,13 @@ fn draw(
                     .no_collapse = true,
                     .no_title_bar = true,
                 },
-            }
+            },
         )
     )
     {
         defer zgui.end();
+
+        zgui.separatorText("Render Settings");
 
         const preview = raytrace.RENDERERS[STATE.current_renderer].desc;
 
@@ -176,6 +178,8 @@ fn draw(
             }
         }
 
+        zgui.sameLine(.{});
+
         {
             if (
                 zgui.comboFromEnum(
@@ -190,6 +194,23 @@ fn draw(
                 }
             }
         }
+
+        var new = STATE.f;
+        if (
+            zgui.dragFloat("texture offset", .{ .v = &new })
+        ) 
+        {
+            const cmd = try ziis.undo.SetValue(f32).init(
+                    allocator,
+                    &STATE.f,
+                    new,
+                    "texture offset"
+            );
+            try cmd.do();
+            try STATE.journal.?.update_if_new_or_add(cmd);
+        }
+
+        zgui.separatorText("Render Info");
 
         zgui.text(
             "Application average {d:.3} ms/frame ({d:.3} FPS)",
@@ -208,31 +229,7 @@ fn draw(
             }
         );
 
-        var new = STATE.f;
-        if (
-            zgui.dragFloat("texture offset", .{ .v = &new })
-        ) 
-        {
-            const cmd = try ziis.undo.SetValue(f32).init(
-                    allocator,
-                    &STATE.f,
-                    new,
-                    "texture offset"
-            );
-            try cmd.do();
-            try STATE.journal.?.update_if_new_or_add(cmd);
-        }
-
-        for (STATE.journal.?.entries.items, 0..)
-            |cmd, ind|
-        {
-            zgui.bulletText("{d}: {s}", .{ ind, cmd.message });
-        }
-
-        zgui.bulletText(
-            "Head Entry in STATE.Journal: {?d}",
-            .{ STATE.journal.?.maybe_head_entry }
-        );
+        zgui.separatorText("Undo Info");
 
         if (zgui.button("undo", .{}))
         {
@@ -246,10 +243,24 @@ fn draw(
             try STATE.journal.?.redo();
         }
 
+        for (STATE.journal.?.entries.items, 0..)
+            |cmd, ind|
+        {
+            zgui.bulletText("{d}: {s}", .{ ind, cmd.message });
+        }
+
+        zgui.bulletText(
+            "Head Entry in STATE.Journal: {?d}",
+            .{ STATE.journal.?.maybe_head_entry },
+        );
+
+        zgui.separatorText("GUI Reference Demos");
+
         if (zgui.button("show gui demo", .{}) )
         { 
             STATE.demo_window_gui = ! STATE.demo_window_gui; 
         }
+        zgui.sameLine(.{});
         if (zgui.button("show plot demo", .{}))
         {
             STATE.demo_window_gui = ! STATE.demo_window_plot; 
