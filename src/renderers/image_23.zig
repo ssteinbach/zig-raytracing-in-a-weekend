@@ -326,18 +326,22 @@ pub const RNDR = struct {
                 material.MaterialMap.init(allocator)
             );
 
+            // 22*22 spheres + 3 big spheres + ground sphere + inner glass
+            try mtl_map.ensureTotalCapacity(22*22 + 3 + 1 + 1);
+
             var worldbuilder = ray_hit.HittableList.init(
                 allocator
             );
+            try worldbuilder.ensureTotalCapacity(22*22 + 3 + 1 + 1);
 
             // ground object
-            try mtl_map.put(
+            mtl_map.putAssumeCapacity(
                 "ground",
                 material.Lambertian.init(
                     vector.Color3f.init_3(0.5, 0.5, 0.5)
                 )
             );
-            try worldbuilder.append(
+            worldbuilder.appendAssumeCapacity(
                 ray_hit.Hittable.init(
                     geometry.Sphere{
                         .name = "ground",
@@ -350,7 +354,7 @@ pub const RNDR = struct {
 
             const threshold = vector.V3f.init_3(4, 0.2, 0);
 
-            var buf = try allocator.alloc(u8, 10*1024);
+            var buf = try allocator.alloc(u8, 22*22*12);
 
             var a:BaseType = -11;
             while (a < 11)
@@ -362,7 +366,7 @@ pub const RNDR = struct {
                 {
                     const name = try std.fmt.bufPrint(
                         buf,
-                        "sphere_{d}_{d}",
+                        "sphere_{d:02}_{d:02}",
                         .{ a + 12, b + 12 },
                     );
                     buf = buf[name.len..];
@@ -388,23 +392,21 @@ pub const RNDR = struct {
                                 utils.rnd_vec_range(
                                     vector.Color3f,
                                     0,
-                                    1
+                                    1,
                                 ).mul(
                                     utils.rnd_vec_range(
                                         vector.Color3f,
                                         0,
-                                        1
+                                        1,
                                     )
                                 )
                             );
 
-                            try mtl_map.put(
+                            mtl_map.putAssumeCapacity(
                                 name,
-                                material.Lambertian.init(
-                                    albedo
-                                )
+                                material.Lambertian.init(albedo),
                             );
-                            try worldbuilder.append(
+                            worldbuilder.appendAssumeCapacity(
                                 ray_hit.Hittable.init(
                                     geometry.Sphere{
                                         .name = name,
@@ -429,7 +431,7 @@ pub const RNDR = struct {
                                 0.5
                             );
 
-                            try mtl_map.put(
+                            mtl_map.putAssumeCapacity(
                                 name,
                                 material.Material {
                                     .metallic = material.Metallic {
@@ -439,7 +441,7 @@ pub const RNDR = struct {
                                 },
                             );
 
-                            try worldbuilder.append(
+                            worldbuilder.appendAssumeCapacity(
                                 ray_hit.Hittable.init(
                                     geometry.Sphere{
                                         .name = name,
@@ -453,14 +455,14 @@ pub const RNDR = struct {
                         else 
                         {
                             // glass
-                            try mtl_map.put(
+                            mtl_map.putAssumeCapacity(
                                 name,
                                 material.DielectricReflRefr.init(
                                     vector.Color3f.init(1.0),
                                     1.5,
                                 )
                             );
-                            try worldbuilder.append(
+                            worldbuilder.appendAssumeCapacity(
                                 ray_hit.Hittable.init(
                                     geometry.Sphere{
                                         .name = name,
@@ -476,7 +478,6 @@ pub const RNDR = struct {
             }
 
             // add big spheres
-
             try mtl_map.put(
                 "big_glass",
                 material.DielectricReflRefr.init(
