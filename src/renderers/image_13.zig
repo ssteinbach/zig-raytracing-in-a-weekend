@@ -225,14 +225,15 @@ pub const RNDR = struct {
     };
 
     pub const State = struct {
-        world: ray_hit.HittableSlice = undefined,
+        world: ray_hit.HittableSlice,
         materials: material.MaterialMap,
-        camera: Camera = undefined,
+        camera: Camera,
         allocator: std.mem.Allocator,
 
         pub fn init_fallible(
            allocator: std.mem.Allocator,
-        ) !void
+            img: *raytrace.Image_rgba_u8,
+        ) !State
         {
             // build material list
             var mtl_map = (
@@ -242,13 +243,13 @@ pub const RNDR = struct {
             try mtl_map.put(
                 "ground",
                 material.Lambertian.init(
-                    vector.Color3f.init_3(0.8, 0.8, 0.0)
+                    vector.Color3f.init_3(0.8, 0.8, 0.0),
                 )
             );
             try mtl_map.put(
                 "center",
                 material.Lambertian.init(
-                    vector.Color3f.init_3(0.1, 0.2, 0.5)
+                    vector.Color3f.init_3(0.1, 0.2, 0.5),
                 )
             );
             try mtl_map.put(
@@ -274,7 +275,7 @@ pub const RNDR = struct {
                     geometry.Sphere{
                         .center_worldspace = .{ .x = 0, .y = -100.5, .z = -1},
                         .radius = 100.0,
-                        .mat = mtl_map.getPtr("ground").?
+                        .mat = mtl_map.getPtr("ground").?,
                     },
                 ),
             );
@@ -283,9 +284,9 @@ pub const RNDR = struct {
                     geometry.Sphere{
                         .center_worldspace = .{ .x = 0, .y = 0, .z = -1.2},
                         .radius = 0.5,
-                        .mat = mtl_map.getPtr("center").?
+                        .mat = mtl_map.getPtr("center").?,
                     },
-                    ),
+                ),
             );
             try worldbuilder.append(
                 ray_hit.Hittable.init(
@@ -294,7 +295,7 @@ pub const RNDR = struct {
                         .radius = 0.5,
                         .mat = mtl_map.getPtr("left").?
                     },
-                    ),
+                ),
             );
             try worldbuilder.append(
                 ray_hit.Hittable.init(
@@ -303,11 +304,21 @@ pub const RNDR = struct {
                         .radius = 0.5,
                         .mat = mtl_map.getPtr("right").?
                     },
-                    ),
+                ),
             );
 
-            state.?.world = try worldbuilder.toOwnedSlice();
-            state.?.materials = mtl_map;
+            return .{
+                .allocator = allocator,
+                .camera = Camera.init(
+                    1.0,
+                    // camera at the origin
+                    vector.Point3f.init(0),
+                    img,
+                ),
+                .world =  try worldbuilder.toOwnedSlice(),
+                .materials = mtl_map,
+            };
+
         } 
 
         pub fn init(
@@ -315,24 +326,10 @@ pub const RNDR = struct {
             img: *raytrace.Image_rgba_u8,
         ) State
         {
-
-            const camera = Camera.init(
-                1.0,
-                // camera at the origin
-                vector.Point3f.init(0),
+            return init_fallible(
+                allocator,
                 img,
-            );
-
-            state = .{
-                .camera = camera,
-                .world =  undefined,
-                .materials = undefined,
-                .allocator = allocator,
-            };
-
-             init_fallible(allocator) catch @panic("ouch");
-
-             return state.?;
+            ) catch @panic("ouch");
         }
 
         pub fn render(

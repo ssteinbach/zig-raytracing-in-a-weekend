@@ -222,8 +222,8 @@ pub const RNDR = struct {
     };
 
     pub const State = struct {
-        world: ray_hit.HittableSlice = undefined,
-        camera: Camera = undefined,
+        world: ray_hit.HittableSlice,
+        camera: Camera,
         allocator: std.mem.Allocator,
 
         pub fn init(

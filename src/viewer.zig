@@ -23,11 +23,13 @@ const STATE = struct {
     var tex: sg.Image = .{};
     var texid: u64 = 0;
     var frame_number: usize = 0;
+    // SAFETY: initialized at the beginning of each render
     var buffer: raytrace.Image_rgba_u8 = undefined;
     var journal: ?ziis.undo.Journal = null;
     var current_renderer: usize = raytrace.RENDERERS.len - 1;
 
     /// threading
+    // SAFETY:initialized at render begin and not used before
     var render_thread: std.Thread = undefined;
     var render_thread_is_running = std.atomic.Value(bool).init(false);
     var render_progress = std.atomic.Value(usize).init(0);
@@ -39,7 +41,10 @@ const STATE = struct {
     // measuring
     var fps: f64 = 0;
     var mspf: f64 = 0;
+    // SAFETY: gets started each render and read at end of render
     var render_start_t: std.time.Instant = undefined;
+    // SAFETY: gets initialized when the program starts and isn't read until
+    //         later
     var start_program_t: std.time.Instant = undefined;
 };
 

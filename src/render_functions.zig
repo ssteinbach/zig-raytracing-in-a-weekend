@@ -982,8 +982,8 @@ const image_6 = struct {
     };
 
     pub const State = struct {
-        world: ray_hit.HittableSlice = undefined,
-        camera: Camera = undefined,
+        world: ray_hit.HittableSlice,
+        camera: Camera,
         allocator: std.mem.Allocator,
 
         pub fn init(
@@ -1266,8 +1266,8 @@ const image_7 = struct {
     };
 
     pub const State = struct {
-        world: ray_hit.HittableSlice = undefined,
-        camera: Camera = undefined,
+        world: ray_hit.HittableSlice,
+        camera: Camera,
         allocator: std.mem.Allocator,
 
         pub fn init(
@@ -1561,8 +1561,8 @@ const image_8 = struct {
     };
 
     pub const State = struct {
-        world: ray_hit.HittableSlice = undefined,
-        camera: Camera = undefined,
+        world: ray_hit.HittableSlice,
+        camera: Camera,
         allocator: std.mem.Allocator,
 
         pub fn init(
@@ -1856,8 +1856,8 @@ const image_9 = struct {
     };
 
     pub const State = struct {
-        world: ray_hit.HittableSlice = undefined,
-        camera: Camera = undefined,
+        world: ray_hit.HittableSlice,
+        camera: Camera,
         allocator: std.mem.Allocator,
 
         pub fn init(
@@ -2151,8 +2151,8 @@ const image_10 = struct {
     };
 
     pub const State = struct {
-        world: ray_hit.HittableSlice = undefined,
-        camera: Camera = undefined,
+        world: ray_hit.HittableSlice,
+        camera: Camera,
         allocator: std.mem.Allocator,
 
         pub fn init(

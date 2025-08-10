@@ -234,14 +234,15 @@ pub const RNDR = struct {
     };
 
     pub const State = struct {
-        world: ray_hit.HittableSlice = undefined,
+        world: ray_hit.HittableSlice,
         materials: material.MaterialMap,
-        camera: Camera = undefined,
+        camera: Camera,
         allocator: std.mem.Allocator,
 
         pub fn init_fallible(
            allocator: std.mem.Allocator,
-        ) !void
+           img: *raytrace.Image_rgba_u8,
+        ) !State
         {
             // build material list
             var mtl_map = (
@@ -341,9 +342,18 @@ pub const RNDR = struct {
                 ),
             );
 
-
-            state.?.world = try worldbuilder.toOwnedSlice();
-            state.?.materials = mtl_map;
+            return .{
+                .allocator = allocator,
+                .camera = Camera.init(
+                    vector.Point3f.init_3(-2, 2, 1),
+                    vector.Point3f.init_3(0, 0, -1),
+                    vector.V3f.init_3(0, 1, 0),
+                    90,
+                    img,
+                ),
+                .world =  try worldbuilder.toOwnedSlice(),
+                .materials = mtl_map,
+            };
         } 
 
         pub fn init(
@@ -352,24 +362,10 @@ pub const RNDR = struct {
         ) State
         {
 
-            const camera = Camera.init(
-                vector.Point3f.init_3(-2, 2, 1),
-                vector.Point3f.init_3(0, 0, -1),
-                vector.V3f.init_3(0, 1, 0),
-                90,
+            return init_fallible(
+                allocator,
                 img,
-            );
-
-            state = .{
-                .camera = camera,
-                .world =  undefined,
-                .materials = undefined,
-                .allocator = allocator,
-            };
-
-             init_fallible(allocator) catch @panic("ouch");
-
-             return state.?;
+            ) catch @panic("ouch");
         }
 
         pub fn render(
