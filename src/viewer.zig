@@ -389,7 +389,7 @@ fn cleanup () void
         const result = gpa.deinit();
         if (result == .leak) 
         {
-            std.debug.print("leak!", .{});
+            std.log.err("leak!", .{});
         }
     }
 }

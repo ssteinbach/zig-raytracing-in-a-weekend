@@ -105,7 +105,7 @@ pub const Hittable = union (enum) {
                     writer
                 )
                 else {
-                    std.debug.print(
+                    std.log.err(
                         "type: {s} has no format \n",
                         .{ @typeName(@TypeOf(h))}
                     );
