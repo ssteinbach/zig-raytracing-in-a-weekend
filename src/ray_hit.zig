@@ -81,10 +81,7 @@ pub const Hittable = union (enum) {
     {
         return switch (self) {
             inline else => |h| (
-                if (@hasDecl(@TypeOf(h), "hit")) h.hit(
-                    r,
-                    interval,
-                )
+                if (@hasDecl(@TypeOf(h), "hit")) h.hit(r, interval)
                 else null
             ),
         };
