@@ -9,8 +9,8 @@
             .hash = "zgui_cimgui_implot_sokol-1.91.8-17SdXovmBgBH_k1AvYK9LSJ0WXDWO_c3Apu0GbcMwILm",
         },
         .comath = .{
-            .url = "git+https://github.com/ssteinbach/comath.git#629293233421e58904995725f175844ae107f21d",
-            .hash = "comath-0.0.1-wKZ2n9fIAQBFrAQg03kYzJ8d_jG28tOd0_HD1Wnh4xmr",
+            .url = "git+https://github.com/inkryption/comath.git#502c5e65c3708e14f19e19fb78c18123e4cb752c",
+            .hash = "comath-0.1.0-wKZ2n-ffAQD0U6AGU-dnus5nW1yRJP5SXtycwQDQoKNb",
         },
     },
     .paths = .{
