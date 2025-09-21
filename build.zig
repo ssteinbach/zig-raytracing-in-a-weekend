@@ -89,10 +89,7 @@ pub fn build(
 
     const comath_dep = b.dependency(
         "comath",
-        .{
-            .optimize = optimize,
-            .target = target,
-        }
+        .{},
     );
 
     lib_mod.addImport("comath", comath_dep.module("comath"));
