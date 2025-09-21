@@ -10,9 +10,9 @@ const vector = @import("vector.zig");
 /// Comath Context for the Zig/RiaW project.  Comath allows for compile time
 /// operator overloading for math expressions like "a + b / c".
 const CTX = (
-    comath.ctx.fnMethod(
-        comath.ctx.simple(
-            comath.ctx.namespace(
+    comath.ctx.fn_method.context(
+        comath.ctx.simple.context(
+            comath.ctx.namespace.context(
                 .{
                     .v3 = vector.V3f.init_3,
                     .v2 = vector.V3f.init_2,

@@ -233,7 +233,7 @@ pub const RNDR = struct {
         {
             var ray_list_builder = std.ArrayList(
                 ray.Ray
-            ).init(allocator);
+            ){};
 
             var sample: usize = 0;
             while (sample < samples_per_pixel)
@@ -244,10 +244,10 @@ pub const RNDR = struct {
                     @floatFromInt(j)
                 );
 
-                try ray_list_builder.append(r);
+                try ray_list_builder.append(allocator, r);
             }
 
-            return try ray_list_builder.toOwnedSlice();
+            return try ray_list_builder.toOwnedSlice(allocator);
         }
 
         /// build a ray that leaves the given pixel, sampling the defocus disk

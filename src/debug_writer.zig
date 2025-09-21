@@ -30,17 +30,14 @@ pub fn write_sphere(
     sph: raytrace.geometry.Sphere,
 ) !void
 {
-    var buf = std.mem.zeroes([1024]u8);
-
+    var buf:[1024]u8 = undefined;
 
     var xform = try BlockWriter.init(
         allocator,
         try std.fmt.bufPrint(
             &buf,
-            "def Xform \"{?s}\"",
-            .{
-                sph.name
-            },
+            "def Xform \"{s}\"",
+            .{ sph.name, },
         ),
 
     );
@@ -70,7 +67,7 @@ pub fn write_sphere(
         allocator,
         try std.fmt.bufPrint(
             &buf,
-            "def Sphere \"{?s}\"\n",
+            "def Sphere \"{s}\"\n",
             .{
                 "Geom"
             },
@@ -107,7 +104,7 @@ pub fn write_rays(
         allocator,
         try std.fmt.bufPrint(
             &buf,
-            "def Xform \"{?s}\"",
+            "def Xform \"{s}\"",
             .{ name },
         ),
 
@@ -153,9 +150,9 @@ pub fn write_rays(
 
     var linear_curve_w = linear_curves.writer();
 
-    var points = std.ArrayList(u8).init(allocator);
-    defer points.deinit();
-    var p_w = points.writer();
+    var points = std.ArrayList(u8){};
+    defer points.deinit(allocator);
+    var p_w = points.writer(allocator);
     for (rays)
         |r|
     {
@@ -193,22 +190,26 @@ pub fn write_rays(
 const BlockWriter = struct {
     allocator: std.mem.Allocator,
     content_builder: std.ArrayList(u8),
+    buf:[4096]u8 = undefined,
 
     pub fn init(
         allocator: std.mem.Allocator,
         header: []const u8,
     ) !@This()
     {
-        var content = std.ArrayList(u8).init(allocator);
-        var writer_ = content.writer();
+        var content = std.ArrayList(u8){};
+
+        const result = @This(){
+            .allocator = allocator,
+            .content_builder = content,
+        };
+
+        var writer_ = content.writer(allocator);
 
         _ = try writer_.write(header);
         _ = try writer_.write("\n{\n");
 
-        return .{
-            .allocator = allocator,
-            .content_builder = content,
-        };
+        return result;
     }
 
     /// close the block with a } and return the content (BlockWriter still owns
@@ -217,7 +218,7 @@ const BlockWriter = struct {
         self: *@This(),
     ) ![]const u8
     {
-        _ = try self.content_builder.writer().write("}\n");
+        _ = try self.content_builder.writer(self.allocator).write("}\n");
         return self.content_builder.items;
     }
 
@@ -225,14 +226,14 @@ const BlockWriter = struct {
         self: *@This(),
     ) TextWriter
     {
-        return self.content_builder.writer();
+        return self.content_builder.writer(self.allocator);
     }
 
     pub fn deinit(
-        self: @This(),
+        self: *@This(),
     ) void
     {
-        self.content_builder.deinit();
+        self.content_builder.deinit(self.allocator);
     }
 };
 
@@ -258,9 +259,10 @@ pub fn main(
     );
     defer file.close();
 
-    var file_writer = file.writer();
+    var buf:[4096]u8 = undefined;
+    var file_writer = file.writer(&buf);
 
-    _ = try file_writer.write(PREFIX);
+    _ = try file_writer.interface.write(PREFIX);
 
     var world = try BlockWriter.init(
         allocator,
@@ -318,5 +320,5 @@ pub fn main(
     );
 
 
-    _ = try file_writer.write(try world.commit());
+    _ = try file_writer.interface.write(try world.commit());
 }

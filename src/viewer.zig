@@ -22,6 +22,7 @@ const STATE = struct {
     const COLOR_CHANNELS: usize = 4;
     var tex: sg.Image = .{};
     var texid: u64 = 0;
+    var view: sg.View = .{};
     var frame_number: usize = 0;
     // SAFETY: initialized at the beginning of each render
     var buffer: raytrace.Image_rgba_u8 = undefined;
@@ -71,12 +72,8 @@ fn imgui_image(
 ) void
 {
     ziis.cimgui.igImage(
-        texid,
+        .{ ._TexID = texid, },
         .{ .x = size[0], .y = size[1]},
-        .{ .x = 0, .y = 0 },
-        .{ .x = 1, .y = 1 },
-        .{ .x = 1, .y = 1, .z = 1, .w = 1 },
-        .{ .x = 0, .y = 0, .z = 0, .w = 0 },
     );
 }
 
@@ -101,8 +98,8 @@ fn draw(
 
         var data = ziis.sokol.gfx.ImageData{};
 
-        data.subimage[0][0] = ziis.sokol.gfx.asRange(
-            STATE.buffer.data
+        data.mip_levels[0] = ziis.sokol.gfx.asRange(
+            STATE.buffer.data,
         );
 
         sg.updateImage( STATE.tex, data);
@@ -440,12 +437,20 @@ pub fn init(
         .{
             .width = STATE.TEX_DIM[0],
             .height = STATE.TEX_DIM[1],
-            .usage = .STREAM,
+            .usage = .{ .stream_update = true },
             .pixel_format = .RGBA8,
         }
     );
 
-    STATE.texid = ziis.sokol.imgui.imtextureid(STATE.tex);
+    STATE.view = sg.makeView(
+        .{
+            .texture = .{
+                .image = STATE.tex,
+            },
+        },
+    );
+
+    STATE.texid = ziis.sokol.imgui.imtextureid(STATE.view);
 
     STATE.buffer = raytrace.Image_rgba_u8.init(
         allocator,
