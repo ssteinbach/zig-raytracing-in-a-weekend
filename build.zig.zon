@@ -2,7 +2,7 @@
     .name = .zig_raytracing_in_a_weekend,
     .version = "0.1.0",
     .fingerprint = 0xcd0b56005b75f298, // Changing this has security and trust implications.
-    .minimum_zig_version = "0.14.0",
+    .minimum_zig_version = "0.15.1",
     .dependencies = .{
         .zgui_cimgui_implot_sokol = .{
             .url = "git+https://github.com/ssteinbach/zgui_cimgui_implot_sokol.git#f8588ccfdd920d71ded52411d9dd58e437ce550f",
