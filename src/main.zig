@@ -28,13 +28,13 @@ pub fn main(
         },
     );
 
+    var da = std.heap.DebugAllocator(.{}){};
+    defer _ = da.deinit();
+    const allocator = da.allocator();
+
     for (raytrace.RENDERERS, 0..)
         |rndr, ind|
     {
-        var da = std.heap.DebugAllocator(.{}){};
-        defer _ = da.deinit();
-        const allocator = da.allocator();
-
         std.debug.print(
             "Renderer {d}: {s} ",
             .{ ind, rndr.desc },
