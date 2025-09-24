@@ -14,12 +14,16 @@ pub fn main(
 
     const t_start_total = try std.time.Instant.now();
     defer std.debug.print(
-        "Total render time for all {d} tests: {d}ms\n",
+        "Total render time for all {d} tests: {d:.03}s\n",
         .{
             raytrace.RENDERERS.len,
             (
-             (std.time.Instant.now() catch t_start_total).since(t_start_total) 
-             / std.time.ns_per_ms
+             @as(f64, 
+                 @floatFromInt(
+                     (std.time.Instant.now() catch t_start_total).since(t_start_total) 
+                 )
+             )
+             / @as(f64, @floatFromInt(std.time.ns_per_s))
             ),
         },
     );
