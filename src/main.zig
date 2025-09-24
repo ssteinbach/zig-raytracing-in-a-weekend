@@ -12,6 +12,18 @@ pub fn main(
         raytrace.RequestedExecutionMode
     ).init(.render);
 
+    const t_start_total = try std.time.Instant.now();
+    defer std.debug.print(
+        "Total render time for all {d} tests: {d}ms\n",
+        .{
+            raytrace.RENDERERS.len,
+            (
+             (std.time.Instant.now() catch t_start_total).since(t_start_total) 
+             / std.time.ns_per_ms
+            ),
+        },
+    );
+
     for (raytrace.RENDERERS, 0..)
         |rndr, ind|
     {
