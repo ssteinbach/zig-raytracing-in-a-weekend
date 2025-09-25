@@ -242,7 +242,7 @@ test "random in unit disk"
     {
         const p = random_in_unit_disk();
 
-        errdefer std.debug.print("Error with p: {s}\n", .{ p });
+        errdefer std.debug.print("Error with p: {f}\n", .{ p });
 
         try std.testing.expect(p.length_squared() < 1 and p.length_squared() > 0);
         try std.testing.expect(p.x > low and p.x < hi);

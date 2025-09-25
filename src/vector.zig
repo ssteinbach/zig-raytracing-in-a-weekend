@@ -108,11 +108,7 @@ pub fn Vec3Of(
 
         pub fn format(
             self: @This(),
-            // fmt
-            comptime _: []const u8,
-            // options
-            _: std.fmt.FormatOptions,
-            writer: anytype,
+            writer: *std.Io.Writer,
         ) !void 
         {
             try writer.print(
@@ -541,14 +537,14 @@ test "Vec Init"
     )
         |v|
     {
-        errdefer std.debug.print("hi vec: {s}\n", .{ V3f.init(v) });
+        errdefer std.debug.print("hi vec: {f}\n", .{ V3f.init(v) });
         try expectV3fEqual(v, V3f.init(v));
     }
 
     // nan check
     {
         const nan = std.math.nan(f32);
-        errdefer std.debug.print("hi vec: {s}\n", .{ V3f.init(nan) });
+        errdefer std.debug.print("hi vec: {f}\n", .{ V3f.init(nan) });
         try std.testing.expectEqual(true, V3f.init(nan).is_nan());
     }
 }
@@ -653,7 +649,7 @@ test "Base V3f: Unary Operator Tests"
             errdefer std.debug.print(
                 "Error with test: \n" ++ @typeName(V3f) ++ "." ++ op 
                 ++ ":\n iteration: {any}\nin: {d}\nexpected_in: {d}\n"
-                ++ "expected: {d}\nmeasured_in: {s}\nmeasured: {s}\n",
+                ++ "expected: {f}\nmeasured_in: {f}\nmeasured: {f}\n",
                 .{ t, t.in, expected_in, expected, in, measured },
             );
 
@@ -775,8 +771,8 @@ test "Base V3f: Binary Operator Tests"
                             "Error with test: " ++ @typeName(V3f) 
                             ++ "." ++ op ++ ": \nlhs: {d} * {d} rhs: {d} * {d}\n"
                             ++ "lhs_sv: {d} rhs_sv: {d}\n"
-                            ++ "{s} " ++ op ++ " {s}\n"
-                            ++ "expected: {d}\nmeasured: {s}\n",
+                            ++ "{f} " ++ op ++ " {f}\n"
+                            ++ "expected: {f}\nmeasured: {f}\n",
                             .{
                                 s_lhs, lhs_v,
                                 s_rhs, rhs_v,

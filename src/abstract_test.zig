@@ -6,9 +6,7 @@ const Vec = struct {
 
     pub fn format(
         self: @This(),
-        comptime _: []const u8,
-        _: std.fmt.FormatOptions,
-        writer: anytype,
+        writer: *std.Io.Writer,
     ) !void 
     {
         try writer.print(
@@ -24,9 +22,7 @@ const Ray = struct {
 
     pub fn format(
         self: @This(),
-        comptime _: []const u8,
-        _: std.fmt.FormatOptions,
-        writer: anytype,
+        writer: *std.Io.Writer,
     ) !void 
     {
         try writer.print(
@@ -118,7 +114,7 @@ const Hittable = struct {
 
             pub fn format(
                 context: *const anyopaque,
-                writer: anytype,
+                writer: *std.Io.Writer,
             ) !void 
             {
                 _ = context;

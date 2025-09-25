@@ -89,17 +89,13 @@ pub const Hittable = union (enum) {
 
     pub fn format(
         self: @This(),
-        comptime fmt: []const u8,
-        options: std.fmt.FormatOptions,
-        writer: anytype,
+        writer: *std.Io.Writer,
     ) !void
     {
         return switch (self) {
             inline else => |h| (
                 if (@hasDecl(@TypeOf(h), "format")) h.format(
-                    fmt,
-                    options,
-                    writer
+                    writer,
                 )
                 else {
                     std.log.err(
