@@ -71,7 +71,6 @@ const Disk = struct {
 const Hittable = struct {
     context: *const anyopaque,
     _hit : *const fn (context: *const anyopaque, r: Ray) ?f32,
-    // _format: *fn (context: *anyopaque, writer: anytype) error{anyerror}!void,
 
     pub fn hit(
         self: @This(),
