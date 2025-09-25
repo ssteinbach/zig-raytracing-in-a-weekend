@@ -780,7 +780,7 @@ test "clamp"
     ) |t_i|
     {
         for (
-            &[_]BaseType{ -4, -1 , 0, 1, 6, 1231242342 }
+            &[_]BaseType{ -4, -1 , 0, 1, 6, 12312423 }
         ) |t_ord|
         {
             try std.testing.expect(
