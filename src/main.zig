@@ -1,16 +1,25 @@
 //! Render with each renderer and log the time the render took
 
 const std = @import("std");
+const builtin = @import("builtin");
 
 const raytrace = @import("raytrace");
 
 pub fn main(
 ) !void 
 {
+    // required to be a part of the context
     var progress = std.atomic.Value(usize).init(0);
     var mode = std.atomic.Value(
         raytrace.RequestedExecutionMode
     ).init(.render);
+
+    var da = std.heap.DebugAllocator(.{}){};
+
+    const allocator = (
+        if (builtin.mode == .ReleaseFast) std.heap.smp_allocator
+        else da.allocator()
+    );
 
     const t_start_total = try std.time.Instant.now();
     defer std.debug.print(
@@ -27,10 +36,6 @@ pub fn main(
             ),
         },
     );
-
-    var da = std.heap.DebugAllocator(.{}){};
-    defer _ = da.deinit();
-    const allocator = da.allocator();
 
     for (raytrace.RENDERERS, 0..)
         |rndr, ind|
