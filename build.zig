@@ -1,5 +1,7 @@
 const std = @import("std");
 
+const ziis = @import("zgui_cimgui_implot_sokol");
+
 const BuildState = struct {
     target: std.Build.ResolvedTarget,
     optimize: std.builtin.OptimizeMode,
@@ -9,12 +11,13 @@ const BuildState = struct {
     test_step: *std.Build.Step,
 };
 
+/// build an executable in this library
 pub fn executable(
     b: *std.Build,
     comptime name: []const u8,
     main_filepath: []const u8,
     state: BuildState,
-) void
+) !void
 {
     const exe_mod = b.createModule(
         .{
@@ -30,54 +33,47 @@ pub fn executable(
 
     exe_mod.addImport("raytrace", state.lib_mod);
 
-    const exe = b.addExecutable(
-        .{
-            .name = name,
-            .root_module = exe_mod,
-        }
-    );
-    state.check_step.dependOn(&exe.step);
-
-    b.installArtifact(exe);
-
-    const run_cmd = b.addRunArtifact(exe);
-
-    run_cmd.step.dependOn(b.getInstallStep());
-
-    if (b.args) 
-        |args| 
-    {
-        run_cmd.addArgs(args);
-    }
-
-    const run_step = b.step(
-        name,
-        "Run the viewer"
-    );
-    run_step.dependOn(&run_cmd.step);
-
     const exe_unit_tests = b.addTest(
         .{
             .root_module = exe_mod,
         }
     );
+    state.test_step.dependOn(&exe_unit_tests.step);
 
-    const run_exe_unit_tests = b.addRunArtifact(exe_unit_tests);
-    state.test_step.dependOn(&run_exe_unit_tests.step);
+    if (state.target.result.cpu.arch.isWasm())
+    {
+        try ziis.build_wasm(
+            b,
+            .{
+                .app_name = name,
+                .mod_main = exe_mod,
+                .dep_ziis_builder = state.dep_ziis.builder,
+                .target = state.target,
+                .optimize = state.optimize,
+                .dep_c_libs = &.{},
+            },
+        );
+    }
+    else
+    {
+        try build_native(
+            b,
+            name,
+            exe_mod,
+            state.check_step,
+        );
+    }
 }
 
 pub fn build(
     b: *std.Build
-) void 
+) !void 
 {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
     const test_step = b.step("test", "Run unit tests");
-    const check_step = b.step(
-        "check",
-        "check if it compiles"
-    );
+    const check_step = b.step("check", "check if it compiles");
 
     const lib_mod = b.createModule(
         .{
@@ -116,55 +112,6 @@ pub fn build(
 
     b.installArtifact(lib);
 
-    // commandline renderer
-    {
-        // @TODO: replace this with a call to the raytracer that dumps to a
-        //        file
-        const exe_mod = b.createModule(
-            .{
-                .root_source_file = b.path("src/main.zig"),
-                .target = target,
-                .optimize = optimize,
-            }
-        );
-
-        exe_mod.addImport("raytrace", lib_mod);
-
-        const exe = b.addExecutable(
-            .{
-                .name = "render",
-                .root_module = exe_mod,
-            }
-        );
-
-        check_step.dependOn(&exe.step);
-
-        b.installArtifact(exe);
-
-        const run_cmd = b.addRunArtifact(exe);
-
-        run_cmd.step.dependOn(b.getInstallStep());
-
-        if (b.args) 
-            |args| 
-        {
-            run_cmd.addArgs(args);
-        }
-
-        const run_step = b.step("run", "Run the renderer");
-        run_step.dependOn(&run_cmd.step);
-
-        const exe_unit_tests = b.addTest(
-            .{
-                .root_module = exe_mod,
-            }
-        );
-
-        const run_exe_unit_tests = b.addRunArtifact(exe_unit_tests);
-        test_step.dependOn(&run_exe_unit_tests.step);
-    }
-
-
     const state = BuildState{
         .target = target,
         .optimize = optimize,
@@ -180,9 +127,19 @@ pub fn build(
         .test_step = test_step,
     };
 
+    // commandline renderer
+    {
+        try executable(
+            b,
+            "render",
+            "src/main.zig",
+            state,
+        );
+    }
+
     // gui viewer
     {
-        executable(
+        try executable(
             b,
             "viewer",
             "src/viewer.zig",
@@ -192,11 +149,42 @@ pub fn build(
 
     // executable program that writes the scene to USD for debugging
     {
-        executable(
+        try executable(
             b,
             "debug_writer",
             "src/debug_writer.zig",
             state
         );
     }
+}
+
+/// builds an executable for non-wasm architecture
+fn build_native(
+    b: *std.Build,
+    comptime name: []const u8,
+    mod: *std.Build.Module,
+    check_step: *std.Build.Step,
+) !void 
+{
+    const exe = b.addExecutable(
+        .{
+            .name = name,
+            .root_module = mod,
+        },
+    );
+    check_step.dependOn(&exe.step);
+    b.installArtifact(exe);
+    var run_step = b.step(
+        name++"-run",
+        "Run the " ++ name ++ " app.",
+    );
+
+    const run_cmd = b.addRunArtifact(exe);
+    if (b.args) 
+        |args| 
+    {
+        run_cmd.addArgs(args);
+    }
+
+    run_step.dependOn(&run_cmd.step);
 }
