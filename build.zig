@@ -42,7 +42,7 @@ pub fn executable(
 
     if (state.target.result.cpu.arch.isWasm())
     {
-        try ziis.build_wasm(
+        _ = try ziis.build_wasm(
             b,
             .{
                 .app_name = name,
