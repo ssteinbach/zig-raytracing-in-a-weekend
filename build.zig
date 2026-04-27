@@ -175,7 +175,7 @@ fn build_native(
     check_step.dependOn(&exe.step);
     b.installArtifact(exe);
     var run_step = b.step(
-        name++"-run",
+        "run-"++name,
         "Run the " ++ name ++ " app.",
     );
 
