@@ -2,15 +2,15 @@
     .name = .zig_raytracing_in_a_weekend,
     .version = "0.1.0",
     .fingerprint = 0xcd0b56005b75f298, // Changing this has security and trust implications.
-    .minimum_zig_version = "0.15.1",
+    .minimum_zig_version = "0.16.0",
     .dependencies = .{
         .zgui_cimgui_implot_sokol = .{
-            .url = "git+https://github.com/ssteinbach/zgui_cimgui_implot_sokol.git#53e48e4d304aa4d7fa901c41e0f094609b1892cc",
-            .hash = "zgui_cimgui_implot_sokol-1.91.8-17SdXpoQCAC54v1wUY_6_CNScmtbR-2T35OqKeuSnq4E",
+            .url = "git+https://github.com/ssteinbach/zgui_cimgui_implot_sokol.git#57941f5bfe9279d061662a6281c67dadec49911b",
+            .hash = "zgui_cimgui_implot_sokol-1.91.8-17SdXvm_DABqtqIrmChkGcxDGkwSQDYwXxojX868JoMg",
         },
         .comath = .{
-            .url = "git+https://github.com/inkryption/comath.git#502c5e65c3708e14f19e19fb78c18123e4cb752c",
-            .hash = "comath-0.1.0-wKZ2n-ffAQD0U6AGU-dnus5nW1yRJP5SXtycwQDQoKNb",
+            .url = "git+https://codeberg.org/agagniere/comath.git#9ccff4bb98ee9929c2f4328ff69eaf38cd0f878b",
+            .hash = "comath-0.1.0-wKZ2n1jdAQAG3Eu-8EXkvyEEKEnFzkcA3KIFIIYrOV-I",
         },
     },
     .paths = .{

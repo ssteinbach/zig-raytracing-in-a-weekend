@@ -6,33 +6,26 @@ const builtin = @import("builtin");
 const raytrace = @import("raytrace");
 
 pub fn main(
+    init: std.process.Init,
 ) !void 
 {
+    const allocator = init.gpa;
+    const io = init.io;
+
     // required to be a part of the context
     var progress = std.atomic.Value(usize).init(0);
     var mode = std.atomic.Value(
         raytrace.RequestedExecutionMode
     ).init(.render);
 
-    var da = std.heap.DebugAllocator(.{}){};
+    const t_start_total = std.Io.Timestamp.now(io, .real);
 
-    const allocator = (
-        if (builtin.mode == .ReleaseFast) std.heap.smp_allocator
-        else da.allocator()
-    );
-
-    const t_start_total = try std.time.Instant.now();
     defer std.debug.print(
-        "Total render time for all {d} tests: {d:.03}s\n",
+        "Total render time for all {d} tests: {f:.03}s\n",
         .{
             raytrace.RENDERERS.len,
             (
-             @as(f64, 
-                 @floatFromInt(
-                     (std.time.Instant.now() catch t_start_total).since(t_start_total) 
-                 )
-             )
-             / @as(f64, @floatFromInt(std.time.ns_per_s))
+             std.Io.Timestamp.now(io, .real).durationTo(t_start_total)
             ),
         },
     );
@@ -52,12 +45,11 @@ pub fn main(
         );
         defer img.deinit();
 
-        const t_start = try std.time.Instant.now();
+        const t_start = std.Io.Timestamp.now(io, .real);
         defer std.debug.print(
-            "{d}ms\n",
+            "{f}\n",
             .{
-                (std.time.Instant.now() catch t_start).since(t_start) 
-                    / std.time.ns_per_ms
+                t_start.durationTo(std.Io.Timestamp.now(io, .real))
             },
         );
 

@@ -236,29 +236,31 @@ pub const RNDR = struct {
         ) !State
         {
             // build material list
-            var mtl_map = (
-                material.MaterialMap.init(allocator)
-            );
+            var mtl_map: material.MaterialMap = .empty;
 
             try mtl_map.put(
+                allocator,
                 "ground",
                 material.Lambertian.init(
                     vector.Color3f.init_3(0.8, 0.8, 0.0),
                 )
             );
             try mtl_map.put(
+               allocator,
                 "center",
                 material.Lambertian.init(
                     vector.Color3f.init_3(0.1, 0.2, 0.5),
                 )
             );
             try mtl_map.put(
+               allocator,
                 "left",
                 material.Metallic.init(
                     vector.Color3f.init(0.8),
                 )
             );
             try mtl_map.put(
+               allocator,
                 "right",
                 material.Metallic.init(
                     vector.Color3f.init_3(0.8, 0.6, 0.2),
@@ -267,10 +269,10 @@ pub const RNDR = struct {
 
             mtl_map.lockPointers();
 
-            var worldbuilder = ray_hit.HittableList.init(
-                allocator
-            );
+            var worldbuilder: ray_hit.HittableList = .empty;
+
             try worldbuilder.append(
+               allocator,
                 ray_hit.Hittable.init(
                     geometry.Sphere{
                         .center_worldspace = .{ .x = 0, .y = -100.5, .z = -1},
@@ -280,6 +282,7 @@ pub const RNDR = struct {
                 ),
             );
             try worldbuilder.append(
+               allocator,
                 ray_hit.Hittable.init(
                     geometry.Sphere{
                         .center_worldspace = .{ .x = 0, .y = 0, .z = -1.2},
@@ -289,6 +292,7 @@ pub const RNDR = struct {
                 ),
             );
             try worldbuilder.append(
+               allocator,
                 ray_hit.Hittable.init(
                     geometry.Sphere{
                         .center_worldspace = .{ .x = -1, .y = 0, .z = -1},
@@ -298,6 +302,7 @@ pub const RNDR = struct {
                 ),
             );
             try worldbuilder.append(
+               allocator,
                 ray_hit.Hittable.init(
                     geometry.Sphere{
                         .center_worldspace = .{ .x = 1, .y = 0, .z = -1},
@@ -315,10 +320,9 @@ pub const RNDR = struct {
                     vector.Point3f.init(0),
                     img,
                 ),
-                .world =  try worldbuilder.toOwnedSlice(),
+                .world =  try worldbuilder.toOwnedSlice(allocator),
                 .materials = mtl_map,
             };
-
         } 
 
         pub fn init(

@@ -243,11 +243,12 @@ pub const RNDR = struct {
         {
             // build material list
             var mtl_map = (
-                material.MaterialMap.init(allocator)
+                material.MaterialMap.empty
             );
 
             try mtl_map.put(
-                "left",
+                allocator,
+"left",
                 material.Material.init(
                     material.Lambertian{
                         .albedo =vector.Color3f.init_3(0, 0, 1),
@@ -255,7 +256,8 @@ pub const RNDR = struct {
                 ),
             );
             try mtl_map.put(
-                "right",
+                allocator,
+"right",
                 material.Material.init(
                     material.Lambertian{
                         .albedo =vector.Color3f.init_3(1, 0, 0),
@@ -267,11 +269,10 @@ pub const RNDR = struct {
 
             const r: BaseType = std.math.cos(std.math.pi / 4.0);
 
-            var worldbuilder = ray_hit.HittableList.init(
-                allocator
-            );
+            var worldbuilder : ray_hit.HittableList = .empty;
             try worldbuilder.append(
-                ray_hit.Hittable.init(
+                allocator,
+ray_hit.Hittable.init(
                     geometry.Sphere{
                         .center_worldspace = vector.V3f.init_3(-r, 0, -1),
                         .radius = r,
@@ -280,7 +281,8 @@ pub const RNDR = struct {
                 ),
             );
             try worldbuilder.append(
-                ray_hit.Hittable.init(
+                allocator,
+ray_hit.Hittable.init(
                     geometry.Sphere{
                         .center_worldspace = vector.V3f.init_3(r, 0, -1),
                         .radius = r,
@@ -298,7 +300,7 @@ pub const RNDR = struct {
                     90,
                     img,
                 ),
-                .world =  try worldbuilder.toOwnedSlice(),
+                .world =  try worldbuilder.toOwnedSlice(allocator),
                 .materials = mtl_map,
             };
         } 

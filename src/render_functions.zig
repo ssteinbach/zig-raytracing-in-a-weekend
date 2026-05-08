@@ -518,24 +518,26 @@ const image_4 = struct {
             const focal_length : BaseType = 1.0;
 
             // camera at the origin
-            const center = vector.Point3f.init(0);
+            const center: vector.Point3f = .ZERO;
         };
 
-        const viewport_u: vector.V3f = .{ 
-            .x = viewport_width,
-            .y = 0,
-            .z = 0,
-        };
-        const viewport_v: vector.V3f = .{ 
-            .x = 0,
-            .y = -viewport_height,
-            .z = 0,
-        };
+        const viewport_u: vector.V3f = .init_3(viewport_width, 0, 0);
+        const viewport_v: vector.V3f = .init_3(0, -viewport_height, 0);
 
         const pixel_delta_u = viewport_u.div(image_width);
         const pixel_delta_v = viewport_v.div(image_height);
 
-        const viewport_upper_left = comath_wrapper.eval(
+        // const viewport_upper_left = comath_wrapper.eval(
+        //     "camera_center - v3(0,0,focal_length) - (v_u/2) - (v_v/2)",
+        //     .{
+        //         .camera_center = vector.V3f.ZERO,
+        //         .focal_length = @as(vector.V3f.BaseType, 1.0),
+        //         .v_u = vector.V3f.init_3(1.0, 0, 0),
+        //         .v_v = vector.V3f.init_3(0, 1, 0),
+        //     },
+        // );
+
+        const viewport_upper_left:vector.V3f = comath_wrapper.eval(
             "camera_center - v3(0,0,focal_length) - (v_u/2) - (v_v/2)",
             .{
                 .camera_center = camera.center,
@@ -661,10 +663,11 @@ const image_5 = struct {
         context.progress.store(0, .monotonic);
 
         // build the world
-        var world = ray_hit.HittableList.init(allocator);
-        defer world.deinit();
+        var world : ray_hit.HittableList = .empty;
+        defer world.deinit(allocator);
 
         world.append(
+                allocator,
             ray_hit.Hittable.init(
                 geometry.Sphere{
                     .center_worldspace = vector.V3f.init_3(0,0,-1),
@@ -673,6 +676,7 @@ const image_5 = struct {
             )
         ) catch @panic("OOM!");
         world.append(
+                allocator,
             ray_hit.Hittable.init(
                 geometry.Sphere{
                     .center_worldspace = vector.V3f.init_3(0, -100.5,-1),
@@ -992,10 +996,11 @@ const image_6 = struct {
         ) State
         {
             // build the world
-            var world = ray_hit.HittableList.init(allocator);
-            defer world.deinit();
+            var world : ray_hit.HittableList = .empty;
+            defer world.deinit(allocator);
 
             world.append(
+                allocator,
                 ray_hit.Hittable.init(
                     geometry.Sphere{
                         .center_worldspace = vector.V3f.init_3(0,0,-1),
@@ -1004,6 +1009,7 @@ const image_6 = struct {
                 )
             ) catch @panic("OOM!");
             world.append(
+                allocator,
                 ray_hit.Hittable.init(
                     geometry.Sphere{
                         .center_worldspace = vector.V3f.init_3(0, -100.5,-1),
@@ -1021,7 +1027,7 @@ const image_6 = struct {
 
             return .{
                 .camera = camera,
-                .world =  world.toOwnedSlice() catch @panic("OOM"),
+                .world =  world.toOwnedSlice(allocator) catch @panic("OOM"),
                 .allocator = allocator,
             };
         }
@@ -1276,10 +1282,11 @@ const image_7 = struct {
         ) State
         {
             // build the world
-            var world = ray_hit.HittableList.init(allocator);
-            defer world.deinit();
+            var world : ray_hit.HittableList = .empty;
+            defer world.deinit(allocator);
 
             world.append(
+                allocator,
                 ray_hit.Hittable.init(
                     geometry.Sphere{
                         .center_worldspace = vector.V3f.init_3(0,0,-1),
@@ -1288,6 +1295,7 @@ const image_7 = struct {
                 )
             ) catch @panic("OOM!");
             world.append(
+                allocator,
                 ray_hit.Hittable.init(
                     geometry.Sphere{
                         .center_worldspace = vector.V3f.init_3(0, -100.5,-1),
@@ -1305,7 +1313,7 @@ const image_7 = struct {
 
             return .{
                 .camera = camera,
-                .world =  world.toOwnedSlice() catch @panic("OOM"),
+                .world =  world.toOwnedSlice(allocator) catch @panic("OOM"),
                 .allocator = allocator,
             };
         }
@@ -1571,10 +1579,11 @@ const image_8 = struct {
         ) State
         {
             // build the world
-            var world = ray_hit.HittableList.init(allocator);
-            defer world.deinit();
+            var world : ray_hit.HittableList = .empty;
+            defer world.deinit(allocator);
 
             world.append(
+                allocator,
                 ray_hit.Hittable.init(
                     geometry.Sphere{
                         .center_worldspace = vector.V3f.init_3(0,0,-1),
@@ -1583,6 +1592,7 @@ const image_8 = struct {
                 )
             ) catch @panic("OOM!");
             world.append(
+                allocator,
                 ray_hit.Hittable.init(
                     geometry.Sphere{
                         .center_worldspace = vector.V3f.init_3(0, -100.5,-1),
@@ -1600,7 +1610,7 @@ const image_8 = struct {
 
             return .{
                 .camera = camera,
-                .world =  world.toOwnedSlice() catch @panic("OOM"),
+                .world =  world.toOwnedSlice(allocator) catch @panic("OOM"),
                 .allocator = allocator,
             };
         }
@@ -1866,10 +1876,11 @@ const image_9 = struct {
         ) State
         {
             // build the world
-            var world = ray_hit.HittableList.init(allocator);
-            defer world.deinit();
+            var world : ray_hit.HittableList = .empty;
+            defer world.deinit(allocator);
 
             world.append(
+                allocator,
                 ray_hit.Hittable.init(
                     geometry.Sphere{
                         .center_worldspace = vector.V3f.init_3(0,0,-1),
@@ -1878,6 +1889,7 @@ const image_9 = struct {
                 )
             ) catch @panic("OOM!");
             world.append(
+                allocator,
                 ray_hit.Hittable.init(
                     geometry.Sphere{
                         .center_worldspace = vector.V3f.init_3(0, -100.5,-1),
@@ -1895,7 +1907,7 @@ const image_9 = struct {
 
             return .{
                 .camera = camera,
-                .world =  world.toOwnedSlice() catch @panic("OOM"),
+                .world =  world.toOwnedSlice(allocator) catch @panic("OOM"),
                 .allocator = allocator,
             };
         }
@@ -2161,10 +2173,11 @@ const image_10 = struct {
         ) State
         {
             // build the world
-            var world = ray_hit.HittableList.init(allocator);
-            defer world.deinit();
+            var world : ray_hit.HittableList = .empty;
+            defer world.deinit(allocator);
 
             world.append(
+                allocator,
                 ray_hit.Hittable.init(
                     geometry.Sphere{
                         .center_worldspace = vector.V3f.init_3(0,0,-1),
@@ -2173,6 +2186,7 @@ const image_10 = struct {
                 )
             ) catch @panic("OOM!");
             world.append(
+                allocator,
                 ray_hit.Hittable.init(
                     geometry.Sphere{
                         .center_worldspace = vector.V3f.init_3(0, -100.5,-1),
@@ -2190,7 +2204,7 @@ const image_10 = struct {
 
             return .{
                 .camera = camera,
-                .world =  world.toOwnedSlice() catch @panic("OOM"),
+                .world =  world.toOwnedSlice(allocator) catch @panic("OOM"),
                 .allocator = allocator,
             };
         }

@@ -14,6 +14,9 @@ const app_wrapper = ziis.app_wrapper;
 // const build_options = @import("build_options");
 
 const STATE = struct {
+    var allocator: std.mem.Allocator = undefined;
+    var io: std.Io = undefined;
+
     var f: f32 = 0;
     var backup_f: f32 = 0;
     var demo_window_gui = false;
@@ -42,28 +45,11 @@ const STATE = struct {
     // measuring
     var fps: f64 = 0;
     var mspf: f64 = 0;
-    // SAFETY: gets started each render and read at end of render
-    var render_start_t: std.time.Instant = undefined;
-    // SAFETY: gets initialized when the program starts and isn't read until
-    //         later
-    var start_program_t: std.time.Instant = undefined;
+    var render_start_t: std.Io.Timestamp = undefined;
+    var start_program_t: std.Io.Timestamp = undefined;
 };
 
 const IS_WASM = builtin.target.cpu.arch.isWasm();
-
-/// the GPA - useful for detecting leaks, but ONLY works in non EMCC builds
-var gpa = (
-    if (IS_WASM) null 
-    else std.heap.GeneralPurposeAllocator(.{}){}
-);
-const backing_allocator = (
-    if (IS_WASM) std.heap.c_allocator 
-    else gpa.allocator()
-);
-var single_threaded_arena = std.heap.ArenaAllocator.init(
-    backing_allocator,
-);
-const allocator = single_threaded_arena.allocator();
 
 /// like calling Imgui::Image but compatible with the texture stuff I'm doing
 fn imgui_image(
@@ -81,6 +67,9 @@ fn imgui_image(
 fn draw(
 ) !void 
 {
+    const allocator = STATE.allocator;
+    const io = STATE.io;
+
     const vp = zgui.getMainViewport();
     const size = vp.getSize();
 
@@ -209,7 +198,7 @@ fn draw(
                     "texture offset"
             );
             try cmd.do();
-            try STATE.journal.?.update_if_new_or_add(cmd);
+            try STATE.journal.?.update_if_new_or_add(allocator, io, cmd);
         }
 
         zgui.separatorText("Render Info");
@@ -219,14 +208,13 @@ fn draw(
             .{ STATE.mspf, STATE.fps, }
         );
         zgui.text(
-            "status: {s}: {d} ({d}%)",
+            "status: {s}: {f} ({d}%)",
             .{
                 render_status,
                 if (STATE.user_execution_mode == .render) (
-                 (try std.time.Instant.now()).since(STATE.render_start_t) 
-                 / std.time.ns_per_ms
+                    STATE.render_start_t.untilNow(io, .real)
                 )
-                else 0,
+                else std.Io.Duration.zero,
                 STATE.render_progress.load(.unordered),
             }
         );
@@ -235,14 +223,14 @@ fn draw(
 
         if (zgui.button("undo", .{}))
         {
-            try STATE.journal.?.undo();
+            try STATE.journal.?.undo(io);
         }
 
         zgui.sameLine(.{});
 
         if (zgui.button("redo", .{}))
         {
-            try STATE.journal.?.redo();
+            try STATE.journal.?.redo(io);
         }
 
         for (STATE.journal.?.entries.items, 0..)
@@ -371,29 +359,21 @@ fn draw(
 
 fn cleanup () void
 {
+    const allocator = STATE.allocator;
+    const io = STATE.io;
+
     // make sure the last render finishes
     STATE.render_thread.join();
 
     if (STATE.journal)
         |*definitely_journal|
     {
-        definitely_journal.deinit();
+        definitely_journal.deinit(allocator, io);
     }
 
     STATE.buffer.deinit();
 
     raytrace.cleanup();
-
-    single_threaded_arena.deinit();
-
-    if (IS_WASM == false)
-    {
-        const result = gpa.deinit();
-        if (result == .leak) 
-        {
-            std.log.err("leak!", .{});
-        }
-    }
 }
 
 fn start_render_thread(
@@ -406,8 +386,11 @@ fn start_render_thread(
 fn render(
 ) void
 {
+    const allocator = STATE.allocator;
+    const io = STATE.io;
+
     STATE.render_thread_is_running.store(true, .monotonic);
-    const t_start = std.time.Instant.now() catch @panic("not supported");
+    const t_start = std.Io.Timestamp.now(io, .real);
     STATE.render_start_t = t_start;
     STATE.execution_mode.store(.render, .monotonic);
 
@@ -422,10 +405,11 @@ fn render(
         },
     );
 
-    const t_end = std.time.Instant.now() catch @panic("not supported");
-    const dur = t_end.since(t_start);
-    STATE.mspf = @floatFromInt(dur / std.time.ns_per_ms);
-    STATE.fps =  std.time.ns_per_s / @as(f64, @floatFromInt(dur));
+    const dur:f64 = @floatFromInt(
+        t_start.untilNow(io, .real).toNanoseconds()
+    );
+    STATE.mspf = dur / std.time.ns_per_ms;
+    STATE.fps =  std.time.ns_per_s / dur;
 
     STATE.render_thread_is_running.store(false, .monotonic);
 }
@@ -433,6 +417,9 @@ fn render(
 pub fn init(
 ) void
 { 
+    const allocator = STATE.allocator;
+    const io = STATE.io;
+
     STATE.tex = sg.makeImage(
         .{
             .width = STATE.TEX_DIM[0],
@@ -458,16 +445,20 @@ pub fn init(
         STATE.TEX_DIM[1]
     ) catch @panic("couldn't make image");
 
-    STATE.start_program_t = std.time.Instant.now() catch @panic("yikes");
+    STATE.start_program_t = std.Io.Timestamp.now(io, .real);
 
     STATE.render_thread = start_render_thread() catch @panic("ouch!");
 }
 
 pub fn main(
+    juicy_main_init: std.process.Init,
 ) void 
 {
+    STATE.allocator = juicy_main_init.gpa;
+    STATE.io = juicy_main_init.io;
+
     STATE.journal = ziis.undo.Journal.init(
-       allocator,
+        STATE.allocator,
         5
     ) catch null;
 

@@ -239,10 +239,11 @@ pub const RNDR = struct {
         ) State
         {
             // build the world
-            var world = ray_hit.HittableList.init(allocator);
-            defer world.deinit();
+            var world: ray_hit.HittableList = .empty;
+            defer world.deinit(allocator);
 
             world.append(
+                allocator,
                 ray_hit.Hittable.init(
                     geometry.Sphere{
                         .center_worldspace = vector.V3f.init_3(0,0,-1),
@@ -251,6 +252,7 @@ pub const RNDR = struct {
                 )
             ) catch @panic("OOM!");
             world.append(
+                allocator,
                 ray_hit.Hittable.init(
                     geometry.Sphere{
                         .center_worldspace = vector.V3f.init_3(0, -100.5,-1),
@@ -268,7 +270,7 @@ pub const RNDR = struct {
 
             return .{
                 .camera = camera,
-                .world =  world.toOwnedSlice() catch @panic("OOM"),
+                .world =  world.toOwnedSlice(allocator) catch @panic("OOM"),
                 .allocator = allocator,
             };
         }

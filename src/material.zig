@@ -6,7 +6,7 @@ const vector = @import("vector.zig");
 const utils = @import("utils.zig");
 
 /// a mapping of name to material
-pub const MaterialMap = std.StringArrayHashMap(Material);
+pub const MaterialMap = std.array_hash_map.String(Material);
 
 /// result of scattering a ray
 pub const ScatterResult = struct {
@@ -18,7 +18,10 @@ pub const ScatterResult = struct {
 pub const Lambertian = struct {
     albedo: vector.Color3f = vector.Color3f.init(0.2),
 
-    pub fn init(c: vector.Color3f) Material {
+    pub fn init(
+        c: vector.Color3f,
+    ) Material 
+    {
         return .{
             .diffuse = .{
                 .albedo = c,

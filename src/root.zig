@@ -13,12 +13,17 @@ pub const ray = @import("ray.zig");
 
 test
 {
+    _ = @import("math.zig");
+    _ = @import("utils.zig");
     _ = @import("image.zig");
     _ = @import("vector.zig");
     _ = @import("comath_wrapper.zig");
     _ = @import("ray.zig");
     _ = @import("render_functions.zig");
     _ = @import("abstract_test.zig");
+    _ = @import("renderers/image_22.zig");
+    _ = @import("renderers/image_23.zig");
+    _ = @import("vector_comath_test.zig");
 }
 
 pub const Image_rgba_u8 = image.Image(4, u8);

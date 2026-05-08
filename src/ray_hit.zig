@@ -108,6 +108,6 @@ pub const Hittable = union (enum) {
     }
 };
 
-pub const HittableList = std.array_list.Managed(Hittable);
+pub const HittableList = std.ArrayList(Hittable);
 pub const HittableSlice = []Hittable;
 

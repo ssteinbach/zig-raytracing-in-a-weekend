@@ -1,50 +1,38 @@
+//! Write out a usda scene
+
 const std = @import("std");
 
 const raytrace = @import("raytrace");
 
-const TextWriter = std.ArrayList(u8).Writer;
-
-// def Xform "hello"
-// {
-//     def Sphere "world"
-//     {
-//     }
-// }
-
 const PREFIX = "#usda 1.0\n";
 
-const BASIS_CURVE_TEMPLATE = \\
+const BASIS_CURVE_PREFIX = \\
     \\ uniform token type = "linear"
     \\ int[] curveVertexCounts = [{d}]
     \\ float[] widths = [1.5] (interpolation = "constant") 
     \\ color3f[] primvars:displayColor = [(1, 0, 0)]
-    \\ point3f[] points = [
-    \\ {s}
-    \\ ]
     \\
  ;
 
 pub fn write_sphere(
-    allocator: std.mem.Allocator,
-    parent_writer: *TextWriter,
+    writer: *std.Io.Writer,
     sph: raytrace.geometry.Sphere,
 ) !void
 {
     var buf:[1024]u8 = undefined;
 
-    var xform = try BlockWriter.init(
-        allocator,
+    try BlockWriter.open(
+        writer,
         try std.fmt.bufPrint(
             &buf,
             "def Xform \"{s}\"",
             .{ sph.name, },
         ),
-
     );
-    defer xform.deinit();
+    defer BlockWriter.close(writer);
 
-    var xform_w = xform.writer();
-    _ = try xform_w.write(
+    try BlockWriter.open(
+        writer,
         try std.fmt.bufPrint(
             &buf,
             "double3 xformOp:translate = ({d}, {d}, {d})\n",
@@ -55,7 +43,7 @@ pub fn write_sphere(
             },
         ),
     );
-    _ = try xform_w.write(
+    _ = try writer.write(
         try std.fmt.bufPrint(
             &buf,
             "    uniform token[] xformOpOrder = [\"xformOp:translate\"]\n",
@@ -63,8 +51,8 @@ pub fn write_sphere(
         ),
     );
 
-    var sphere = try BlockWriter.init(
-        allocator,
+    try BlockWriter.open(
+        writer,
         try std.fmt.bufPrint(
             &buf,
             "def Sphere \"{s}\"\n",
@@ -74,34 +62,30 @@ pub fn write_sphere(
         ),
 
     );
-    defer sphere.deinit();
+    defer BlockWriter.close(writer);
 
-    var sphere_w = sphere.writer();
-
-    _ = try sphere_w.write(
+    _ = try writer.write(
         try std.fmt.bufPrint(
             &buf,
             "double radius = {d}\n",
             .{ sph.radius },
         ),
     );
-
-    _ = try xform_w.write(try sphere.commit());
-
-    _ = try parent_writer.write(try xform.commit());
 }
 
+/// write a block of rays as lines into the writer as usda
 pub fn write_rays(
-    allocator: std.mem.Allocator,
-    parent_writer: *TextWriter,
-    rays: []const raytrace.ray.Ray,
+    writer: *std.Io.Writer,
+    /// name of the ray bundle, IE "Camera Rays"
     name: []const u8,
+    /// rays to write
+    rays: []const raytrace.ray.Ray,
 ) !void
 {
     var buf = std.mem.zeroes([10*1024]u8);
 
-    var xform = try BlockWriter.init(
-        allocator,
+    try BlockWriter.open(
+        writer,
         try std.fmt.bufPrint(
             &buf,
             "def Xform \"{s}\"",
@@ -109,17 +93,16 @@ pub fn write_rays(
         ),
 
     );
-    defer xform.deinit();
+    defer BlockWriter.close(writer);
 
-    var xform_w = xform.writer();
-    _ = try xform_w.write(
+    _ = try writer.write(
         try std.fmt.bufPrint(
             &buf,
             "double3 xformOp:translate = ({d}, {d}, {d})\n",
             .{ 0,0,0 },
         ),
     );
-    _ = try xform_w.write(
+    _ = try writer.write(
         try std.fmt.bufPrint(
             &buf,
             "    uniform token[] xformOpOrder = [\"xformOp:translate\"]\n",
@@ -137,8 +120,8 @@ pub fn write_rays(
         //     float[] widths = [.5] (interpolation = "constant") 
         //     color3f[] primvars:displayColor = [(1, 0, 0)]
         // }
-    var linear_curves = try BlockWriter.init(
-        allocator,
+    try BlockWriter.open(
+        writer,
         try std.fmt.bufPrint(
             &buf,
             "def BasisCurves \"Tubes\"\n",
@@ -146,102 +129,89 @@ pub fn write_rays(
         ),
 
     );
-    defer linear_curves.deinit();
+    defer BlockWriter.close(writer);
 
-    var linear_curve_w = linear_curves.writer();
-
-    var points = std.ArrayList(u8){};
-    defer points.deinit(allocator);
-    var p_w = points.writer(allocator);
-    for (rays)
-        |r|
-    {
-        const end = r.origin.add(r.dir);
-        _ = try p_w.write(
-            try std.fmt.bufPrint(
-                &buf,
-                "({d}, {d}, {d}), ({d}, {d}, {d}), \n",
-                .{
-                    r.origin.x,
-                    r.origin.y,
-                    r.origin.z,
-                    end.x,
-                    end.y,
-                    end.z,
-            },
-            ),
-        );
-    }
-
-    _ = try linear_curve_w.write(
+    _ = try writer.write(
         try std.fmt.bufPrint(
             &buf,
-            BASIS_CURVE_TEMPLATE,
-            .{ rays.len * 2 , points.items },
+            BASIS_CURVE_PREFIX,
+            .{ rays.len * 2 },
         ),
     );
 
-    _ = try xform_w.write(try linear_curves.commit());
+    {
+        try SquareBlockWriter.open(writer, "point3f[] points = ");
+        defer SquareBlockWriter.close(writer);
 
-    _ = try parent_writer.write(try xform.commit());
+        for (rays)
+            |r|
+        {
+            const end = r.origin.add(r.dir);
+            _ = try writer.write(
+                try std.fmt.bufPrint(
+                    &buf,
+                    "({d}, {d}, {d}), ({d}, {d}, {d}), \n",
+                    .{
+                        r.origin.x,
+                        r.origin.y,
+                        r.origin.z,
+                        end.x,
+                        end.y,
+                        end.z,
+                    },
+                    ),
+            );
+        }
+    }
 }
 
 /// a block of text with a prefix + {\n and suffix }\n
 const BlockWriter = struct {
-    allocator: std.mem.Allocator,
-    content_builder: std.ArrayList(u8),
-    buf:[4096]u8 = undefined,
-
-    pub fn init(
-        allocator: std.mem.Allocator,
+    /// open a block with a prefix ie PREFIX {
+    pub fn open(
+        writer: *std.Io.Writer,
         header: []const u8,
-    ) !@This()
+    ) !void
     {
-        var content = std.ArrayList(u8){};
-
-        const result = @This(){
-            .allocator = allocator,
-            .content_builder = content,
-        };
-
-        var writer_ = content.writer(allocator);
-
-        _ = try writer_.write(header);
-        _ = try writer_.write("\n{\n");
-
-        return result;
+        _ = try writer.write(header);
+        _ = try writer.write("\n{\n");
     }
 
-    /// close the block with a } and return the content (BlockWriter still owns
-    /// the memory).
-    pub fn commit(
-        self: *@This(),
-    ) ![]const u8
-    {
-        _ = try self.content_builder.writer(self.allocator).write("}\n");
-        return self.content_builder.items;
-    }
-
-    pub fn writer(
-        self: *@This(),
-    ) TextWriter
-    {
-        return self.content_builder.writer(self.allocator);
-    }
-
-    pub fn deinit(
-        self: *@This(),
+    /// close a block with }\n
+    pub fn close(
+        writer: *std.Io.Writer,
     ) void
     {
-        self.content_builder.deinit(self.allocator);
+        _ = writer.write("}\n") catch unreachable;
+    }
+};
+
+const SquareBlockWriter = struct {
+    /// open a block with a prefix ie PREFIX {
+    pub fn open(
+        writer: *std.Io.Writer,
+        header: []const u8,
+    ) !void
+    {
+        _ = try writer.write(header);
+        _ = try writer.write("\n[\n");
+    }
+
+    /// close a block with }\n
+    pub fn close(
+        writer: *std.Io.Writer,
+    ) void
+    {
+        _ = writer.write("]\n") catch unreachable;
     }
 };
 
 pub fn main(
+    init: std.process.Init,
 ) !void
 {
-    var gpa = (std.heap.GeneralPurposeAllocator(.{}){});
-    const allocator = gpa.allocator();
+    const allocator = init.arena.allocator();
+    const io = init.io;
 
     var img =  raytrace.Image_rgba_u8.init(
         allocator,
@@ -250,75 +220,73 @@ pub fn main(
     ) catch @panic("couldn't make image");
 
     raytrace.render_functions.img23.RNDR.init(allocator, &img);
+
     const state = raytrace.render_functions.img23.RNDR.state.?;
 
     // file to write to
-    const file = try std.fs.cwd().createFile(
+    const file = try std.Io.Dir.cwd().createFile(
+        io,
         "debug.usda",
         .{},
     );
-    defer file.close();
+    defer file.close(io);
 
     var buf:[4096]u8 = undefined;
-    var file_writer = file.writer(&buf);
+    var file_writer = file.writer(io, &buf);
+    defer file_writer.flush() catch unreachable;
 
     _ = try file_writer.interface.write(PREFIX);
 
-    var world = try BlockWriter.init(
-        allocator,
-        "def Xform \"World\""
+    try BlockWriter.open(
+        &file_writer.interface,
+        "def Xform \"World\"",
     );
-    defer world.deinit();
-
-    var world_writer = world.writer();
-
-    for (state.world)
-        |hittable|
     {
-        switch (hittable) {
-            .sphere => |sph| try write_sphere(
-                allocator,
-                &world_writer,
-                sph,
-            ),
+
+        for (state.world)
+            |hittable|
+        {
+            switch (hittable) {
+                .sphere => |sph| try write_sphere(
+                    &file_writer.interface,
+                    sph,
+                ),
+            }
         }
-    }
 
-    const rays = try state.camera.rays_for_pixel(
-        allocator,
-        200,
-        200,
-    );
+        {
+            const rays = try state.camera.rays_for_pixel(
+                allocator,
+                200,
+                200,
+            );
 
-    try write_rays(
-        allocator,
-        &world_writer,
-        rays,
-        "CameraRays",
-    );
+            try write_rays(
+                &file_writer.interface,
+                "CameraRays",
+                rays,
+            );
+        }
 
-    try write_sphere(
-        allocator,
-        &world_writer,
-        .{
-            .name = "Camera",
-            .center_worldspace = state.camera.center,
-            .radius = 0.25,
-        },
-    );
-
-    try write_rays(
-        allocator,
-        &world_writer,
-        &.{
+        try write_sphere(
+            &file_writer.interface,
             .{
-                .origin = state.camera.center,
-                .dir = state.camera.look_at.sub(state.camera.center),
+                .name = "Camera",
+                .center_worldspace = state.camera.center,
+                .radius = 0.25,
             },
-        },
-        "CameraLookat",
-    );
+        );
 
-
-    _ = try file_writer.interface.write(try world.commit());
+        try write_rays(
+            &file_writer.interface,
+            "CameraLookat",
+            &.{
+                .{
+                    .origin = state.camera.center,
+                    .dir = state.camera.look_at.sub(state.camera.center),
+                },
+            },
+        );
+    }
+    BlockWriter.close(&file_writer.interface);
 }

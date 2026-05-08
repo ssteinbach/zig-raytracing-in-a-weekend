@@ -245,23 +245,26 @@ pub const RNDR = struct {
         {
             // build material list
             var mtl_map = (
-                material.MaterialMap.init(allocator)
+                material.MaterialMap.empty
             );
 
             try mtl_map.put(
-                "ground",
+                allocator,
+"ground",
                 material.Lambertian.init(
                     vector.Color3f.init_3(0.8, 0.8, 0.0)
                 )
             );
             try mtl_map.put(
-                "center",
+                allocator,
+"center",
                 material.Lambertian.init(
                     vector.Color3f.init_3(0.1, 0.2, 0.5)
                 )
             );
             try mtl_map.put(
-                "left",
+                allocator,
+"left",
                 material.Material.init(
                     material.DielectricReflRefr{
                         .albedo =vector.Color3f.init(1.0),
@@ -270,7 +273,8 @@ pub const RNDR = struct {
                 ),
             );
             try mtl_map.put(
-                "bubble",
+                allocator,
+"bubble",
                 material.Material.init(
                     material.DielectricReflRefr{
                         .albedo =vector.Color3f.init(1.0),
@@ -279,7 +283,8 @@ pub const RNDR = struct {
                 ),
             );
             try mtl_map.put(
-                "right",
+                allocator,
+"right",
                 material.Material.init(
                     material.Metallic{
                         .albedo = (
@@ -292,11 +297,10 @@ pub const RNDR = struct {
 
             mtl_map.lockPointers();
 
-            var worldbuilder = ray_hit.HittableList.init(
-                allocator
-            );
+            var worldbuilder : ray_hit.HittableList = .empty;
             try worldbuilder.append(
-                ray_hit.Hittable.init(
+                allocator,
+ray_hit.Hittable.init(
                     geometry.Sphere{
                         .center_worldspace = .{ .x = 0, .y = -100.5, .z = -1},
                         .radius = 100.0,
@@ -305,7 +309,8 @@ pub const RNDR = struct {
                 ),
             );
             try worldbuilder.append(
-                ray_hit.Hittable.init(
+                allocator,
+ray_hit.Hittable.init(
                     geometry.Sphere{
                         .center_worldspace = .{ .x = 0, .y = 0, .z = -1.2},
                         .radius = 0.5,
@@ -314,7 +319,8 @@ pub const RNDR = struct {
                 ),
             );
             try worldbuilder.append(
-                ray_hit.Hittable.init(
+                allocator,
+ray_hit.Hittable.init(
                     geometry.Sphere{
                         .center_worldspace = .{ .x = -1, .y = 0, .z = -1},
                         .radius = 0.5,
@@ -323,7 +329,8 @@ pub const RNDR = struct {
                 ),
             );
             try worldbuilder.append(
-                ray_hit.Hittable.init(
+                allocator,
+ray_hit.Hittable.init(
                     geometry.Sphere{
                         .center_worldspace = .{ .x = -1, .y = 0, .z = -1},
                         .radius = 0.4,
@@ -332,7 +339,8 @@ pub const RNDR = struct {
                 ),
             );
             try worldbuilder.append(
-                ray_hit.Hittable.init(
+                allocator,
+ray_hit.Hittable.init(
                     geometry.Sphere{
                         .center_worldspace = .{ .x = 1, .y = 0, .z = -1},
                         .radius = 0.5,
@@ -349,7 +357,7 @@ pub const RNDR = struct {
                     20,
                     img,
                 ),
-                .world = try worldbuilder.toOwnedSlice(),
+                .world = try worldbuilder.toOwnedSlice(allocator),
                 .materials = mtl_map,
                 .allocator = allocator,
             };

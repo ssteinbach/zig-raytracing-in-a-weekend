@@ -231,9 +231,7 @@ pub const RNDR = struct {
             j: usize,
         ) ![]ray.Ray
         {
-            var ray_list_builder = std.ArrayList(
-                ray.Ray
-            ){};
+            var ray_list_builder: std.ArrayList( ray.Ray) = .empty;
 
             var sample: usize = 0;
             while (sample < samples_per_pixel)
@@ -323,17 +321,13 @@ pub const RNDR = struct {
         ) !State
         {
             // build material list
-            var mtl_map = (
-                material.MaterialMap.init(allocator)
-            );
+            var mtl_map: material.MaterialMap = .empty;
 
             // 22*22 spheres + 3 big spheres + ground sphere + inner glass
-            try mtl_map.ensureTotalCapacity(22*22 + 3 + 1 + 1);
+            try mtl_map.ensureTotalCapacity(allocator, 22*22 + 3 + 1 + 1);
 
-            var worldbuilder = ray_hit.HittableList.init(
-                allocator
-            );
-            try worldbuilder.ensureTotalCapacity(22*22 + 3 + 1 + 1);
+            var worldbuilder: ray_hit.HittableList = .empty;
+            try worldbuilder.ensureTotalCapacity(allocator, 22*22 + 3 + 1 + 1);
 
             // ground object
             mtl_map.putAssumeCapacity(
@@ -480,6 +474,7 @@ pub const RNDR = struct {
 
             // add big spheres
             try mtl_map.put(
+                allocator,
                 "big_glass",
                 material.DielectricReflRefr.init(
                     vector.Color3f.init(1),
@@ -487,6 +482,7 @@ pub const RNDR = struct {
                 )
             );
             try worldbuilder.append(
+                allocator,
                 ray_hit.Hittable.init(
                     geometry.Sphere{
                         .name = "big_glass",
@@ -498,12 +494,14 @@ pub const RNDR = struct {
             );
 
             try mtl_map.put(
+                allocator,
                 "big_diffuse",
                 material.Lambertian.init(
                     vector.Color3f.init_3(0.4, 0.2, 0.1),
                 )
             );
             try worldbuilder.append(
+                allocator,
                 ray_hit.Hittable.init(
                     geometry.Sphere{
                         .name = "big_diffuse",
@@ -516,6 +514,7 @@ pub const RNDR = struct {
 
 
             try mtl_map.put(
+                allocator,
                 "big_metal",
                 material.Material {
                     .metallic = .{
@@ -525,6 +524,7 @@ pub const RNDR = struct {
                 }
             );
             try worldbuilder.append(
+                allocator,
                 ray_hit.Hittable.init(
                     geometry.Sphere{
                         .name = "big_metal",
@@ -548,7 +548,7 @@ pub const RNDR = struct {
                     10,
                     img,
                 ),
-                .world = try worldbuilder.toOwnedSlice(),
+                .world = try worldbuilder.toOwnedSlice(allocator),
                 .materials = mtl_map,
             };
         } 
@@ -621,7 +621,7 @@ test "sample_square"
     {
         const p = RNDR.Camera.sample_square();
 
-        errdefer std.debug.print("Error with p: {s}\n", .{ p });
+        errdefer std.debug.print("Error with p: {f}\n", .{ p });
 
         try std.testing.expect(p.x > low and p.x < hi);
         try std.testing.expect(p.y > low and p.y < hi);
